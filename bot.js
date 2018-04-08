@@ -151,7 +151,7 @@ bot.cmds = {
 			send(msg.channel, output);
 		}
 	},
-	
+	/*
 	//owner-only eval command for testing and on-the-spot hotfixes/changes
 	js: {
 		permitted: (msg) => { return msg.author.id === auth.owner; },
@@ -195,7 +195,7 @@ bot.cmds = {
 			}).catch(e => send(msg.channel, e.toString()));
 		}
 	},
-	
+	*/
 	//attach webhook(s) to channel(s)
 	hook: {
 		permitted: () => true,
