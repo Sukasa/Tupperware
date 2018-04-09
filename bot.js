@@ -613,8 +613,10 @@ bot.cmds = {
 					out = "Missing argument 'prefix'.";
 				} else {
 					cfg.prefix = args[1];
+					config.prefix = args[1];
 					out = "Prefix changed to " + args[1];
 					fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+					updateStatus();
 				}
 			} else if(args[0] == "roles") {
 				if(!msg.channel.guild.members.get(bot.user.id).permission.has("manageRoles")) {
@@ -783,7 +785,7 @@ bot.cmds = {
 };
 
 function updateStatus() {
-	bot.editStatus({ name: `tul!help | ${Object.values(tulpae).reduce((acc,val) => acc + val.length, 0)} registered`});
+	bot.editStatus({ name: `say ${config.prefix}help`});
 }
 
 function validateGuildCfg(guild) {
