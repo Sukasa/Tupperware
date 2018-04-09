@@ -196,13 +196,6 @@ bot.cmds = {
 		}
 	},
 	*/
-	//attach webhook(s) to channel(s)
-	hook: {
-		permitted: () => true,
-		execute: function(msg, args, cfg) {
-			send(msg.channel, "This command no longer has a purpose. Webhooks have been changed to opt-out rather than opt-in: they are automatically generated for non-blacklisted channels when a user attempts to proxy in them.");
-		}
-	},
 	
 	//register new tulpa
 	register: {
