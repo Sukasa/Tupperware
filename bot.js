@@ -68,37 +68,38 @@ bot.on('messageCreate', async function (msg) {
 			return bot.cmds[cmd].execute(msg, args, cfg);
 		}
 	} else if(tulpae[msg.author.id] && !(msg.channel instanceof Eris.PrivateChannel) && (!cfg.blacklist || !cfg.blacklist.includes(msg.channel.id))) {
-		let clean = msg.cleanContent || msg.content;
-		clean = clean.replace(/<:.+?:\d+?>/,"emote");
-		let cleanarr = clean.split('\n');
-		let del = false;
-		let lines = msg.content.split('\n');
-		for(let i = 0; i < lines.length; i++) {
-			tulpae[msg.author.id].forEach(t => {
-				if(checkTulpa(msg, cfg, t, lines[i], cleanarr[i])) {
-					del = true;
-				}
-			});
-		}
-		
-		if(del) {
-			if(msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
-				setTimeout(() => msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }}),100);
-			return fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
-		} else {
-			for(let t of tulpae[msg.author.id]) {
-				if(checkTulpa(msg, cfg, t, msg.content, clean)) {
-					del = true;
-					break;
-				}
-			};
+			let clean = msg.cleanContent || msg.content;
+			clean = clean.replace(/<:.+?:\d+?>/,"emote");
+			let cleanarr = clean.split('\n');
+			let del = false;
+			let lines = msg.content.split('\n');
+			for(let i = 0; i < lines.length; i++) {
+				tulpae[msg.author.id].forEach(t => {
+					if(checkTulpa(msg, cfg, t, lines[i], cleanarr[i])) {
+						del = true;
+					}
+				});
+			}
+			
 			if(del) {
 				if(msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
 					setTimeout(() => msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }}),100);
 				return fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+			} else {
+				for(let t of tulpae[msg.author.id]) {
+					if(checkTulpa(msg, cfg, t, msg.content, clean)) {
+						del = true;
+						break;
+					}
+				};
+				if(del) {
+					if(msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
+						setTimeout(() => msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }}),100);
+					return fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+				}
 			}
 		}
-	}
+	
 });
 
 bot.cmds = {
@@ -136,11 +137,11 @@ bot.cmds = {
 					timestamp: new Date().toJSON(),
 					color: 0x999999,
 					author: {
-						name: "Tupperware",
+						name: "Haven Tupperware",
 						icon_url: bot.user.avatarURL
 					},
 					footer: {
-						text: "By Keter#1730"
+						text: "By Keter#1730, Modifications by Sukasa#6109"
 					}
 				}}
 				for(let cmd of Object.keys(bot.cmds)) {
@@ -151,51 +152,6 @@ bot.cmds = {
 			send(msg.channel, output);
 		}
 	},
-	/*
-	//owner-only eval command for testing and on-the-spot hotfixes/changes
-	js: {
-		permitted: (msg) => { return msg.author.id === auth.owner; },
-		execute: function(msg, args, cfg) {
-			if(msg.author.id != auth.owner) return;
-			let message = msg.content.substr(7);
-			let out = "";
-			try {
-				out = eval(message);
-			} catch(e) {
-				out = e.toString();
-			}
-			send(msg.channel, util.inspect(out).slice(0,2000));
-		}
-	},
-	
-	//owner-only feedback reply command
-	reply: {
-		permitted: (msg) => { return msg.author.id === auth.owner; },
-		execute: function(msg, args, cfg) {
-			if(msg.author.id != auth.owner) return;
-			bot.getMessage(feedbackID, args[0]).then(message => {
-				let parts = message.content.split('\n');
-				if(parts[3] && parts[0].startsWith("User") && parts[1].startsWith("Server") && parts[2].startsWith("Channel") && parts[3].startsWith("Message")) {
-					let user = bot.users.get(parts[0].split(' ')[1]);
-					let server = bot.guilds.get(parts[1].split(' ')[1]);
-					let channel = server && server.channels.get(parts[2].split(' ')[1]);
-					let message = parts[3].split(' ').slice(1).join(' ');
-					let embed = { embed: {
-								title: "Reply to Feedback",
-								description: `**Original by ${user.username}#${user.discriminator}**\n${message}\n\n**Reply**\n${args.slice(1).join(' ')}`,
-								timestamp: new Date().toJSON(),
-								color: 0x999999,
-								footer: {
-									text: "Keter#1730",
-									icon_url: bot.users.get(auth.owner).avatarURL
-								}
-							}};
-					send(channel, embed);
-				}
-			}).catch(e => send(msg.channel, e.toString()));
-		}
-	},
-	*/
 	
 	//register new tulpa
 	register: {
@@ -390,7 +346,6 @@ bot.cmds = {
 		}
 	},
 		
-	
 	birthday: {
 		help: cfg => "View or change a " + cfg.lang + "'s birthday, or see upcoming birthdays",
 		usage: cfg =>  ["birthday [name] [date] -\n\tIf name and date are specified, set the named " + cfg.lang + "'s birthday to the date.\n\tIf name only is specified, show the " + cfg.lang + "'s birthday.\n\tIf neither are given, show the next 5 birthdays on the server."],
@@ -500,7 +455,6 @@ bot.cmds = {
 			send(msg.channel, out);
 		}
 	},
-		
 	
 	showhost: {
 		help: cfg => "Show the user that registered the " + cfg.lang + " that last spoke",
