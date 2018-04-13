@@ -544,7 +544,7 @@ bot.cmds = {
 		usage: cfg =>  ["invite - sends the bot's oauth2 URL in this channel"],
 		permitted: (msg) => true,
 		execute: function(msg, args, cfg) {
-			send(msg.channel, "https://discordapp.com/api/oauth2/authorize?client_id=431544605209788416&permissions=805314560&scope=bot");
+			send(msg.channel, `https://discordapp.com/api/oauth2/authorize?client_id=${auth.inviteCode}&permissions=805314560&scope=bot`);
 		}
 	},
 	
@@ -752,6 +752,10 @@ bot.cmds = {
 	}
 };
 
+if (!auth.inviteCode) {
+	delete bot.cmds.invite;
+}
+
 function updateStatus() {
 	bot.editStatus({ name: `say ${config.prefix}help`});
 }
@@ -776,37 +780,39 @@ function proper(text) {
 
 function checkTulpa(msg, cfg, tulpa, content, clean, doSubmit = true) {
 	if(clean.startsWith(tulpa.brackets[0]) && clean.endsWith(tulpa.brackets[1])) {
+
 		if (doSubmit)
-			fetchWebhook(msg.channel).then(hook => {
-				let data = {
-						content: content.substring(tulpa.brackets[0].length, content.length-tulpa.brackets[1].length),
-						username: tulpa.name + (tulpa.tag ? ` ${tulpa.tag}` : "") + (checkTulpaBirthday(tulpa) ? "\uD83C\uDF70" : ""),
-						avatarURL: tulpa.url
-					};
-				if(recent[msg.channel.id] && msg.author.id != recent[msg.channel.id].userID && data.username == recent[msg.channel.id].name)
-					data.username = data.username.substring(0,1) + "\u200a" + data.username.substring(1);
-				if(msg.attachments[0]) {
-					sendAttachmentsWebhook(msg, cfg, data, content, hook);
-				} else {
-					bot.executeWebhook(hook.id,hook.token,data)
-					.catch(e => { if(e.code == 10015) {
-						delete webhooks[msg.channel.id];
-						fetchWebhook(msg.channel).then(hook => {
-							bot.executeWebhook(hook.id,hook.token,data);
-						}).catch(e => send(msg.channel, "Webhook deleted and error creating new one. Check my permissions?"));;
-					}});
-			}	
-				if(!tulpa.posts) tulpa.posts = 0;
-				tulpa.posts++;
-				if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
-					send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.lang + " webhook message will show.");
-				recent[msg.channel.id] = { userID: msg.author.id, name: data.username, tulpa: tulpa };
-				if(cfg.log && msg.channel.guild.channels.has(cfg.log)) {
-					send(msg.channel.guild.channels.get(cfg.log), `Name: ${tulpa.name}\nRegistered by: ${msg.author.username}#${msg.author.discriminator}\nChannel: <#${msg.channel.id}>\nMessage: ${content.substring(tulpa.brackets[0].length, content.length-tulpa.brackets[1].length)}`);
-				}			
-			}).catch(e => {
-				send(msg.channel, e);
-			});
+		  fetchWebhook(msg.channel).then(hook => {
+			  let data = {
+  					content: content.substring(tulpa.brackets[0].length, content.length-tulpa.brackets[1].length),
+  					username: tulpa.name + (tulpa.tag ? ` ${tulpa.tag}` : "") + (checkTulpaBirthday(tulpa) ? "\uD83C\uDF70" : ""),
+  					avatarURL: tulpa.url
+  				};
+  			if(recent[msg.channel.id] && msg.author.id != recent[msg.channel.id].userID && data.username == recent[msg.channel.id].name)
+  				data.username = data.username.substring(0,1) + "\u200a" + data.username.substring(1);
+  			if(msg.attachments[0]) {
+  				sendAttachmentsWebhook(msg, cfg, data, content, hook);
+  			} else {
+  				bot.executeWebhook(hook.id,hook.token,data)
+  				.catch(e => { if(e.code == 10015) {
+  					delete webhooks[msg.channel.id];
+  					fetchWebhook(msg.channel).then(hook => {
+  						bot.executeWebhook(hook.id,hook.token,data);
+  					}).catch(e => send(msg.channel, "Webhook deleted and error creating new one. Check my permissions?"));;
+  				}});
+  			}
+  			if(!tulpa.posts) tulpa.posts = 0;
+  			tulpa.posts++;
+  			if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
+  				send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.lang + " webhook message will show.");
+  			recent[msg.channel.id] = { userID: msg.author.id, name: data.username, tulpa: tulpa };
+  			if(cfg.log && msg.channel.guild.channels.has(cfg.log)) {
+  				send(msg.channel.guild.channels.get(cfg.log), `Name: ${tulpa.name}\nRegistered by: ${msg.author.username}#${msg.author.discriminator}\nChannel: <#${msg.channel.id}>\nMessage: ${content.substring(tulpa.brackets[0].length, content.length-tulpa.brackets[1].length)}`);
+  			}
+			
+  		}).catch(e => {
+  			send(msg.channel, e);
+  		});
 		return true;
 	} else return false;
 }
