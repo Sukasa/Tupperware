@@ -548,18 +548,6 @@ bot.cmds = {
 		}
 	},
 	
-	feedback: {
-		help: cfg => "Send a message to the developer, who may reply through the bot",
-		usage: cfg =>  ["feedback <message> - send the message to the developer"],
-		desc: cfg => "Dev note: I'm always happy to answer questions too, or just to chat!",
-		permitted: (msg) => true,
-		execute: function(msg, args, cfg) {
-			if(!args[0]) return bot.cmds.help.execute(msg, ["feedback"], cfg);
-			bot.createMessage("431722290971934721", `User: ${msg.author.id} ${msg.author.username}#${msg.author.discriminator}\nServer: ${msg.channel.guild ? msg.channel.guild.id + " " + msg.channel.guild.name : "DM"}\nChannel: ${msg.channel.id} ${msg.channel.name}\nMessage: ${args.join(' ')}`);
-			send(msg.channel, "I've passed along your message, thank you.");
-		}
-	},
-	
 	cfg: {
 		help: cfg => "Configure server-specific settings",
 		usage: cfg =>  ["cfg prefix <newPrefix> - Change the bot's prefix",
