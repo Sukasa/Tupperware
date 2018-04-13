@@ -118,7 +118,7 @@ bot.on('messageCreate', async function (msg) {
 				}
 			}
 		}
-	
+	}
 });
 
 bot.cmds = {
