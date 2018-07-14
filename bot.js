@@ -1,21 +1,20 @@
 //dependencies
-const Eris = require('eris');
-const logger = require('winston');
-const request = require('request');
-const moment = require('moment');
-const fs = require('fs');
-const validUrl = require('valid-url');
-const util = require('util');
+const Eris = require("eris");
+const logger = require("winston");
+const request = require("request");
+const fs = require("fs");
+const validUrl = require("valid-url");
+const util = require("util");
 
 //create data files if they don't exist
-['./auth.json','./tulpae.json','./servercfg.json','./webhooks.json'].forEach(file => {
-	if(!fs.existsSync(file))
-		fs.writeFileSync(file, "{ }", (err) => { if(err) throw err });
-})
-const auth = require('./auth.json');
-const tulpae = require('./tulpae.json');
-const config = require('./servercfg.json');
-const webhooks = require('./webhooks.json');
+["/auth.json","/tulpae.json","/servercfg.json","/webhooks.json"].forEach(file => {
+	if(!fs.existsSync(__dirname + file))
+		fs.writeFileSync(__dirname + file, "{ }", (err) => { if(err) throw err; });
+});
+const auth = require("./auth.json");
+const tulpae = require("./tulpae.json");
+const config = require("./servercfg.json");
+const webhooks = require("./webhooks.json");
 
 const recent = {};
 const feedbackID = "431722290971934721";
@@ -24,13 +23,13 @@ const zwsp = String.fromCharCode(8203); //zero-width space for embed formatting
 var disconnects = 0;
 
 logger.configure({
-	level: 'debug',
+	level: "debug",
 	transports: [
 		new logger.transports.Console(),
-		new logger.transports.File({ filename: 'output.log' })
+		new logger.transports.File({ filename: "output.log" })
 	],
 	format: logger.format.combine(
-		logger.format((info, opts) => {info.message = util.format(info.message); return info})(),
+		logger.format((info) => {info.message = util.format(info.message); return info; })(),
 		logger.format.colorize(),
 		logger.format.printf(info => `${info.level}: ${info.message}`)
 	)
@@ -39,30 +38,30 @@ logger.configure({
 // Initialize Bot
 var bot = new Eris(auth.discord);
 
-bot.on('ready', () => {
+bot.on("ready", () => {
 	logger.info(`Connected\nLogged in as:\n${bot.user.username} - (${bot.user.id})`);
 	updateStatus();
 	setInterval(updateStatus, 1800000);
 	bot.guilds.forEach(validateGuildCfg);
 });
 
-bot.on('guildCreate', validateGuildCfg);
+bot.on("guildCreate", validateGuildCfg);
 
 
-bot.on('disconnect', function() {
-	logger.warn('Bot disconnected! Attempting to reconnect.');
+bot.on("disconnect", function() {
+	logger.warn("Bot disconnected! Attempting to reconnect.");
 	disconnects++;
 	if(disconnects < 50)
 		bot.connect();
 });
 
-bot.on('error', console.error);
+bot.on("error", console.error);
 
-bot.on('messageCreate', async function (msg) {
+bot.on("messageCreate", async function (msg) {
 	if(msg.author.bot) return;
 	let cfg = msg.channel.guild && config[msg.channel.guild.id] || { prefix: "tul!", rolesEnabled: false, lang: "tulpa"};
 	if (msg.content.startsWith(cfg.prefix) && (!cfg.cmdblacklist || !cfg.cmdblacklist.includes(msg.channel.id))) {
-		var args = msg.content.substr(cfg.prefix.length).split(' ');
+		var args = msg.content.substr(cfg.prefix.length).split(" ");
 		var cmd = args.shift();
 		
 		if(bot.cmds[cmd] && checkPermissions(cmd,msg,args)) {
@@ -72,31 +71,23 @@ bot.on('messageCreate', async function (msg) {
 	} else if(tulpae[msg.author.id] && !(msg.channel instanceof Eris.PrivateChannel) && (!cfg.blacklist || !cfg.blacklist.includes(msg.channel.id))) {
 		let clean = msg.cleanContent || msg.content;
 		clean = clean.replace(/(<:.+?:\d+?>)|(<@!?\d+?>)/,"cleaned");
-		let cleanarr = clean.split('\n');
-		let count = 0;
-		let lines = msg.content.split('\n');
+		let cleanarr = clean.split("\n");
+		let lines = msg.content.split("\n");
+		let replace = [];
 		for(let i = 0; i < lines.length; i++) {
 			tulpae[msg.author.id].forEach(t => {
-				if(checkTulpa(msg, cfg, t, lines[i], cleanarr[i], false)) {
-					count++;
+				if(checkTulpa(msg, t, cleanarr[i])) {
+					replace.push([msg,cfg,t,lines[i].substring(t.brackets[0].length, lines[i].length-t.brackets[1].length)]);
 				}
 			});
 		}
-		let doSubstitution = count > 1;
 		
-		if(doSubstitution) {
-			for(let i = 0; i < lines.length; i++) {
-				tulpae[msg.author.id].forEach(t => {
-					checkTulpa(msg, cfg, t, lines[i], cleanarr[i])
-				});
-			}
-			if(msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
-				setTimeout(() => msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }}),100);
-			return fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
-		} else {
+		if(replace.length < 2) replace = [];
+		
+		if(!replace[0]) {
 			for(let t of tulpae[msg.author.id]) {
-				if(checkTulpa(msg, cfg, t, msg.content, clean)) {
-					doSubstitution = true;
+				if(checkTulpa(msg, t, clean)) {
+					replace.push([msg, cfg, t, msg.content.substring(t.brackets[0].length, msg.content.length-t.brackets[1].length)]);
 					break;
 				}
 			};
@@ -118,14 +109,134 @@ bot.on('messageCreate', async function (msg) {
 				}
 			}
 		}
+			
+		if(replace[0]) {
+			Promise.all(replace.map(r => replaceMessage(...r)))
+				.then(() => {
+					if(msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
+						msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }});
+					save("tulpae",tulpae);
+				}).catch(e => send(msg.channel, e));
+		}
 	}
 });
+
+async function replaceMessage(msg, cfg, tulpa, content) {
+	const hook = await fetchWebhook(msg.channel);
+	const data = {
+		wait: true,
+		content: content,
+		username: `${tulpa.name} ${tulpa.tag ? tulpa.tag : ""} ${checkTulpaBirthday(tulpa) ? "\uD83C\uDF70" : ""}`,
+		avatarURL: tulpa.url,
+	};
+
+	if(recent[msg.channel.id] && msg.author.id !== recent[msg.channel.id].userID && data.username === recent[msg.channel.id].name) {
+		data.username = data.username.substring(0,1) + "\u200a" + data.username.substring(1);
+	}
+
+	if(msg.attachments[0]) {
+		return sendAttachmentsWebhook(msg, cfg, data, content, hook);
+	}
+
+	try {
+		await bot.executeWebhook(hook.id,hook.token,data);
+	} catch (e) {
+		console.log(e);
+		if(e.code === 10015) {
+			delete webhooks[msg.channel.id];
+			const hook = await fetchWebhook(msg.channel);
+			return bot.executeWebhook(hook.id,hook.token,data);
+		}
+	}
+
+	if(cfg.log && msg.channel.guild.channels.has(cfg.log)) {
+		send(msg.channel.guild.channels.get(cfg.log),
+			`Name: ${tulpa.name}\nRegistered by: ${msg.author.username}#${msg.author.discriminator}\nChannel: <#${msg.channel.id}>\nMessage: ${content}`);
+	}
+
+	if(!tulpa.posts) tulpa.posts = 0;
+	tulpa.posts++;
+	if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has("manageMessages")) {
+		send(msg.channel, `Warning: I do not have permission to delete messages. Both the original message and ${cfg.lang} webhook message will show.`);
+	}
+	recent[msg.channel.id] = {
+		userID: msg.author.id,
+		name: data.username,
+		tulpa: tulpa,
+	};
+}
+
+function checkTulpa(msg, tulpa, clean) {
+	return clean.startsWith(tulpa.brackets[0]) && clean.endsWith(tulpa.brackets[1]) && ((clean.length == (tulpa.brackets[0].length + tulpa.brackets[1].length) && msg.attachments[0]) || clean.length > (tulpa.brackets[0].length + tulpa.brackets[1].length));
+}
+
+async function sendAttachmentsWebhook(msg, cfg, data, content, hook, tulpa) {
+	let files = [];
+	for(let i = 0; i < msg.attachments.length; i++) {
+		files.push({ file: await attach(msg.attachments[i].url), name: msg.attachments[i].filename });
+	}
+	data.file = files;
+	return new Promise((resolve, reject) => {
+		bot.executeWebhook(hook.id,hook.token,data)
+			.catch(e => { 
+				console.log(e);
+				if(e.code == 10015) {
+					delete webhooks[msg.channel.id];
+					return fetchWebhook(msg.channel).then(hook => {
+						return bot.executeWebhook(hook.id,hook.token,data);
+					}).catch(e => reject("Webhook deleted and error creating new one. Check my permissions?"));
+				}
+			}).then(() => {
+				if(cfg.log && msg.channel.guild.channels.has(cfg.log)) {
+					let logchannel = msg.channel.guild.channels.get(cfg.log);
+					if(!recent[msg.channel.id] && !logchannel.permissionsOf(bot.user.id).has("sendMessages")) {
+						send(msg.channel, "Warning: There is a log channel configured but I do not have permission to send messages to it. Logging has been disabled.");
+						cfg.log = null;
+						save("servercfg",config);
+					}
+					else if(logchannel.permissionsOf(bot.user.id).has("sendMessages"))
+						send(logchannel, `Name: ${tulpa.name}\nRegistered by: ${msg.author.username}#${msg.author.discriminator}\nChannel: <#${msg.channel.id}>\nMessage: ${content}`);
+				}
+				if(!tulpa.posts) tulpa.posts = 0;
+				tulpa.posts++;
+				if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
+					send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.lang + " webhook message will show.");
+				recent[msg.channel.id] = { userID: msg.author.id, name: data.username, tulpa: tulpa };
+				resolve();
+			}).catch(reject);
+	});
+}
+
+function fetchWebhook(channel) {
+	return new Promise((resolve, reject) => {
+		if(webhooks[channel.id])
+			resolve(webhooks[channel.id]);
+		else if(!channel.permissionsOf(bot.user.id).has("manageWebhooks"))
+			reject("Proxy failed: Missing 'Manage Webhooks' permission in this channel.");
+		else {
+			channel.createWebhook({ name: "Tupperhook" }).then(hook => {
+				webhooks[channel.id] = { id: hook.id, token: hook.token };
+				resolve(webhooks[channel.id]);
+				save("webhooks",webhooks);
+			}).catch(e => { reject("Proxy failed with unknown reason: Error " + e.code); });
+		}
+	});
+}
+
+function attach(url, name) {
+	return new Promise(function(resolve, reject) {
+		request({url:url,encoding:null}, (err, res, data) => {
+			console.log(`${url}: ${data.length}`);
+			resolve(data);
+		});
+	});
+}
 
 bot.cmds = {
 	help: {
 		help: cfg => "Print this message, or get help for a specific command",
 		usage: cfg =>  ["help - print list of commands", 
-						"help [command] - get help on a specific command"],
+			"help [command] - get help on a specific command"],
 		permitted: () => true,
 		execute: function(msg, args, cfg) {
 			let output = "";
@@ -143,7 +254,7 @@ bot.cmds = {
 						footer: {
 							text: "If something is wrapped in <> or [], do not include the brackets when using the command. They indicate whether that part of the command is required <> or optional []."
 						}
-					}}
+					}};
 					for(let u of bot.cmds[args[0]].usage(cfg))
 						output.embed.description += `${cfg.prefix + u}\n`;
 					if(bot.cmds[args[0]].desc)
@@ -162,7 +273,7 @@ bot.cmds = {
 					footer: {
 						text: "By Keter#1730, Modifications by Sukasa#6109"
 					}
-				}}
+				}};
 				for(let cmd of Object.keys(bot.cmds)) {
 					if(bot.cmds[cmd].help && bot.cmds[cmd].permitted(msg,args))
 						output.embed.description += `**${cfg.prefix + cmd}**  -  ${bot.cmds[cmd].help(cfg)}\n`;
@@ -181,7 +292,7 @@ bot.cmds = {
 		execute: function(msg, args, cfg) {
 			args = getMatches(msg.content,/['](.*?)[']|(\S+)/gi).slice(1);
 			let out = "";
-			let brackets = args.slice(1).join(' ').split('text');
+			let brackets = args.slice(1).join(" ").split("text");
 			if(!args[0]) {
 				return bot.cmds.help.execute(msg, ["register"], cfg);
 			} else if(!args[1]) {
@@ -200,7 +311,7 @@ bot.cmds = {
 				if(!tulpae[msg.author.id]) tulpae[msg.author.id] = [];
 				let tulpa = {
 					name: args[0],
-					url: 'https://i.imgur.com/ZpijZpg.png',
+					url: "https://i.imgur.com/ZpijZpg.png",
 					brackets: brackets,
 					posts: 0,
 					host: msg.author.id
@@ -215,10 +326,11 @@ bot.cmds = {
 							g.members.get(msg.author.id).addRole(r.id);
 						});
 					})).then(() => {
-						fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+						save("tulpae",tulpae);
 					});
 				}
-				out = proper(cfg.lang) + " registered successfully!\nName: " + tulpa.name + "\nBrackets: " + `${brackets[0]}text${brackets[1]}` + "\nUse `" + cfg.prefix + "rename`, `" + cfg.prefix + "brackets`, and `" + cfg.prefix + "avatar` to set/update your tulpa's info."; 
+				save("tulpae",tulpae);
+				out = proper(cfg.lang) + " registered successfully!\nName: " + tulpa.name + "\nBrackets: " + `${brackets[0]}text${brackets[1]}` + "\nUse `" + cfg.prefix + "rename`, `" + cfg.prefix + "brackets`, and `" + cfg.prefix + "avatar` to set/update your " + cfg.lang + "'s info."; 
 			}
 			send(msg.channel, out);
 		}
@@ -232,7 +344,7 @@ bot.cmds = {
 		execute: function(msg, args, cfg) {
 			let out = "";
 			args = getMatches(msg.content,/['](.*?)[']|(\S+)/gi).slice(1);
-			let name = args.join(' ');
+			let name = args.join(" ");
 			if(!args[0]) {
 				return bot.cmds.help.execute(msg, ["remove"], cfg);
 			} else if(!tulpae[msg.author.id]) {
@@ -241,14 +353,13 @@ bot.cmds = {
 				out = "Could not find " + cfg.lang + " with that name registered under your account.";
 			} else {
 				out = proper(cfg.lang) + " unregistered.";
-				save = true;
 				let arr = tulpae[msg.author.id];
 				let tul = arr.find(t => t.name.toLowerCase() == name.toLowerCase());
 				Object.keys(config).filter(t => config[t].rolesEnabled && bot.guilds.has(t)).map(t => bot.guilds.get(t)).forEach(g => {
 					if(tul.roles && tul.roles[g.id]) g.deleteRole(tul.roles[g.id]);
-				})
+				});
 				arr.splice(arr.indexOf(tul), 1);
-				fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+				save("tulpae",tulpae);
 			}
 			send(msg.channel, out);
 		}
@@ -262,7 +373,7 @@ bot.cmds = {
 			let out = "";
 			let target;
 			if(args[0]) {
-				target = resolveUser(msg, args.join(' '));
+				target = resolveUser(msg, args.join(" "));
 			} else {
 				target = msg.author;
 			}
@@ -279,8 +390,22 @@ bot.cmds = {
 					},
 					fields: []
 				}};
+				let len = 200;
+				let page = 1;
 				tulpae[target.id].forEach(t => {
-					out.embed.fields.push(generateTulpaField(t));
+					let field = generateTulpaField(t);
+					len += field.name.length;
+					len += field.value.length;
+					if(len < 5000) {
+						out.embed.fields.push(field);
+					} else {
+						out.embed.title += ` (page ${page})`;
+						send(msg.channel, out);
+						len = 200;
+						page++;
+						out.embed.title = `${target.username}#${target.discriminator}'s registered ${cfg.lang}s (page ${page})`;
+						out.embed.fields = [field];
+					}
 				});
 			}
 			send(msg.channel, out);
@@ -306,7 +431,7 @@ bot.cmds = {
 				out = "You already have a " + cfg.lang + " with that new name.";
 			} else {
 				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).name = args[1];
-				fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+				save("tulpae",tulpae);
 				out = proper(cfg.lang) + " renamed successfully.";
 			}
 			send(msg.channel, out);
@@ -330,13 +455,13 @@ bot.cmds = {
 			} else if(!validUrl.isWebUri(args[1])) {
 				out = "Malformed url.";
 			} else {
-				request(args[1], { method: 'HEAD' }, (err, res) => {
-					if(err || !res.headers['content-type'] || !res.headers['content-type'].startsWith('image')) return send(msg.channel, "I couldn't find an image at that URL. Make sure it's a direct link (ends in .jpg or .png for example).");
-					if(Number(res.headers['content-length']) > 1000000) {
+				request(args[1], { method: "HEAD" }, (err, res) => {
+					if(err || !res.headers["content-type"] || !res.headers["content-type"].startsWith("image")) return send(msg.channel, "I couldn't find an image at that URL. Make sure it's a direct link (ends in .jpg or .png for example).");
+					if(Number(res.headers["content-length"]) > 1000000) {
 						return send(msg.channel, "That image is too large and Discord will not accept it. Please use an image under 1mb.");
 					}
 					tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).url = args[1];
-					fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+					save("tulpae",tulpae);
 					send(msg.channel, "Avatar changed successfully.");
 				});
 				return;
@@ -359,8 +484,8 @@ bot.cmds = {
 			} else if(!args[1]) {
 				out = tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).desc;
 			} else {
-				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).desc = args.slice(1).join(' ').slice(0,500);
-				fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).desc = args.slice(1).join(" ").slice(0,500);
+				save("tulpae",tulpae);
 				out = "Description updated successfully.";
 			}
 			send(msg.channel, out);
@@ -396,12 +521,12 @@ bot.cmds = {
 						if(second < now) second.setFullYear(now.getFullYear()+1);
 						return first.getTime()-second.getTime();
 					}).slice(0,5)
-					.map(t => {
-						let bday = new Date(t.birthday);
-						bday.setFullYear(now.getFullYear());
-						if(bday < now) bday.setFullYear(now.getFullYear()+1);
-						return (bday.getTime() == now.getTime()) ? `${t.name}: Birthday today! \uD83C\uDF70` : `${t.name}: ${bday.toDateString()}`
-					}).join('\n');
+						.map(t => {
+							let bday = new Date(t.birthday);
+							bday.setFullYear(now.getFullYear());
+							if(bday < now) bday.setFullYear(now.getFullYear()+1);
+							return (bday.getTime() == now.getTime()) ? `${t.name}: Birthday today! \uD83C\uDF70` : `${t.name}: ${bday.toDateString()}`;
+						}).join("\n");
 			} else if(!tulpae[msg.author.id] || !tulpae[msg.author.id].find(t => t.name.toLowerCase() === args[0].toLowerCase())) {
 				out = "You don't have a " + cfg.lang + " with that name registered.";
 			} else if(!args[1]) {
@@ -412,7 +537,7 @@ bot.cmds = {
 			} else {
 				let date = new Date(args[1]);
 				tulpae[msg.author.id].find(t => t.name.toLowerCase() === args[0].toLowerCase()).birthday = date.getTime();
-				fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+				save("tulpae",tulpae);
 				out = `${proper(cfg.lang)} '${args[0]}' birthday set to ${date.toDateString()}.`;
 			}
 			send(msg.channel, out);
@@ -432,17 +557,17 @@ bot.cmds = {
 			} else if(!tulpae[msg.author.id] || !tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase())) {
 				out = "You don't have a " + cfg.lang + " with that name registered.";
 			} else if(!args[1]) {
-				let brackets = tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).brackets
+				let brackets = tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).brackets;
 				out = `Brackets for ${args[0]}: ${brackets[0]}text${brackets[1]}`;
 			} else {
-				let brackets = args.slice(1).join(' ').split('text');
+				let brackets = args.slice(1).join(" ").split("text");
 				if(brackets.length < 2) {
 					out = "No 'text' found to detect brackets with. For the last part of your command, enter the word 'text' surrounded by any characters (except `''`).\nThis determines how the bot detects if it should replace a message.";
 				} else if(!brackets[0] && !brackets[1]) {
 					out = "Need something surrounding 'text'.";
 				} else {
 					tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).brackets = brackets;
-					fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+					save("tulpae",tulpae);
 					out = "Brackets updated successfully.";
 				}
 			}
@@ -451,9 +576,9 @@ bot.cmds = {
 	},
 	
 	tag: {
-		help: cfg => "Remove or change a " + cfg.lang + "'s tag (displayed next to their name)",
+		help: cfg => "Remove or change a " + cfg.lang + "'s tag (displayed next to name when proxying)",
 		usage: cfg => ["tag <name> [tag] - if tag is given, change the " + cfg.lang + "'s tag, if not, clear the tag"],
-		desc: cfg => "A " + cfg.lang + "'s tag is shown next to their name when speaking. This is basically a formalized way to designate different hosts and types of " + cfg.lang + ".",
+		desc: cfg => "A " + cfg.lang + "'s tag is shown next to their name when speaking.",
 		permitted: () => true,
 		execute: function(msg, args, cfg) {
 			let out = "";
@@ -464,22 +589,22 @@ bot.cmds = {
 				out = "You don't have a " + cfg.lang + " with that name registered.";
 			} else if(!args[1]) {
 				delete tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).tag;
-				fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
-				out = "Tag cleared."
-			} else if (args.slice(1).join(' ').length + tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).name.length > 27) {
+				save("tulpae",tulpae);
+				out = "Tag cleared.";
+			} else if (args.slice(1).join(" ").length + tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).name.length > 27) {
 				out = "That tag is too long to use with that " + cfg.lang + "'s name. The combined total must be less than 28 characters.";
 			} else {
-				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).tag = args.slice(1).join(' ');
-				fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).tag = args.slice(1).join(" ");
+				save("tulpae",tulpae);
 				out = "Tag updated successfully.";
 			}
 			send(msg.channel, out);
 		}
 	},
 	
-	showhost: {
+	showuser: {
 		help: cfg => "Show the user that registered the " + cfg.lang + " that last spoke",
-		usage: cfg =>  ["showhost - Finds the user that registered the " + cfg.lang + " that last sent a message in this channel"],
+		usage: cfg =>  ["showuser - Finds the user that registered the " + cfg.lang + " that last sent a message in this channel"],
 		permitted: (msg) => true,
 		execute: function(msg, args, cfg) {
 			if(!recent[msg.channel.id]) send(msg.channel, "No " + cfg.lang + "s have spoken in this channel since I last started up, sorry.");
@@ -500,12 +625,12 @@ bot.cmds = {
 			if(!args[0])
 				return bot.cmds.help.execute(msg, ["find"], cfg);
 			let all = Object.keys(tulpae)
-					.filter(id => msg.channel.guild.members.has(id))
-					.reduce((arr, tul) => arr.concat(tulpae[tul]), []);
+				.filter(id => msg.channel.guild.members.has(id))
+				.reduce((arr, tul) => arr.concat(tulpae[tul]), []);
 			if(!all[0]) {
 				return send(msg.channel, "There are no " + cfg.lang + "s registered on this server.");
 			}
-			let search = args.join(' ').toLowerCase();
+			let search = args.join(" ").toLowerCase();
 			let tul = all.filter(t => t.name.toLowerCase() == search);
 			if(!tul[0])
 				tul = all.filter(t => t.name.toLowerCase().includes(search));
@@ -526,7 +651,7 @@ bot.cmds = {
 				} else {
 					tul = tul.slice(0,10);
 					let embed = { embed: {
-						title: `Results`,
+						title: "Results",
 						fields: []
 					}};
 					tul.forEach(t => {
@@ -547,15 +672,15 @@ bot.cmds = {
 			send(msg.channel, `https://discordapp.com/api/oauth2/authorize?client_id=${auth.inviteCode}&permissions=805314560&scope=bot`);
 		}
 	},
-	
+
 	cfg: {
 		help: cfg => "Configure server-specific settings",
 		usage: cfg =>  ["cfg prefix <newPrefix> - Change the bot's prefix",
-						"cfg roles <enable|disable> - Enable or disable automatically managed mentionable " + cfg.lang + " roles, so that users can mention " + cfg.lang + "s",
-						"cfg rename <newname> - Change all instances of the default name 'tulpa' in bot replies in this server to the specified term",
-						"cfg log <channel> - Enable the bot to send a log of all " + cfg.lang + " messages and some basic info like who registered them. Useful for having a searchable channel and for distinguishing between similar names.",
-						"cfg blacklist <add|remove> <channel(s)> - Add or remove channels to the bot's proxy blacklist - users will be unable to proxy in blacklisted channels.",
-						"cfg cmdblacklist <add|remove> <channel(s)> - Add or remove channels to the bot's command blacklist - users will be unable to issue commands in blacklisted channels."],
+			"cfg roles <enable|disable> - Enable or disable automatically managed mentionable " + cfg.lang + " roles, so that users can mention " + cfg.lang + "s",
+			"cfg rename <newname> - Change all instances of the default name 'tulpa' in bot replies in this server to the specified term",
+			"cfg log <channel> - Enable the bot to send a log of all " + cfg.lang + " messages and some basic info like who registered them. Useful for having a searchable channel and for distinguishing between similar names.",
+			"cfg blacklist <add|remove> <channel(s)> - Add or remove channels to the bot's proxy blacklist - users will be unable to proxy in blacklisted channels.",
+			"cfg cmdblacklist <add|remove> <channel(s)> - Add or remove channels to the bot's command blacklist - users will be unable to issue commands in blacklisted channels."],
 		
 		permitted: (msg) => (msg.member && msg.member.permission.has("administrator")),
 		execute: function(msg, args, cfg) {
@@ -571,8 +696,8 @@ bot.cmds = {
 					cfg.prefix = args[1];
 					config.prefix = args[1];
 					out = "Prefix changed to " + args[1];
-					fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
 					updateStatus();
+					save("servercfg",config);
 				}
 			} else if(args[0] == "roles") {
 				if(!msg.channel.guild.members.get(bot.user.id).permission.has("manageRoles")) {
@@ -595,9 +720,9 @@ bot.cmds = {
 								return true;
 							}));
 						})).then(() => {
-							fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
+							save("tulpae",tulpae);
 						});
-						fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+						save("servercfg",config);
 						out = proper(cfg.lang) + " roles enabled. Adding the roles may take some time.";
 					}
 				} else if(args[1] === "disable") {
@@ -614,10 +739,10 @@ bot.cmds = {
 									delete tul.roles[guild.id];
 									if(!Object.keys(tul.roles)[0]) delete tul.roles;
 								}
-							})
-						})
-						fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
-						fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+							});
+						});
+						save("tulpae",tulpae);
+						save("servercfg",config);
 						out = proper(cfg.lang) + " roles disabled. Deleting the roles may take some time.";
 					}
 				} else {
@@ -627,15 +752,15 @@ bot.cmds = {
 				if(!args[1]) {
 					out = "Missing argument 'newname'";
 				} else {
-					cfg.lang = args.slice(1).join(' ');
+					cfg.lang = args.slice(1).join(" ");
 					out = "Entity name changed to " + cfg.lang;
-					fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+					save("servercfg",config);
 				}
 			} else if(args[0] == "log") {
 				if(!args[1]) {
 					out = "Logging channel unset. Logging is now disabled.";
 					cfg.log = null;
-					fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+					save("servercfg",config);
 				} else {
 					let channel = resolveChannel(msg,args[1]);
 					if(!channel) {
@@ -643,48 +768,48 @@ bot.cmds = {
 					} else {
 						out = `Logging channel set to <#${channel.id}>`;
 						cfg.log = channel.id;
-						fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+						save("servercfg",config);
 					}
 				}
 			} else if(args[0] == "blacklist") {
 				if(!args[1]) {
-					if(cfg.blacklist) out = `Currently blacklisted channels: ${cfg.blacklist.map(id => "<#"+id+">").join(' ')}`;
-					else out = "No channels currently blacklisted."
+					if(cfg.blacklist) out = `Currently blacklisted channels: ${cfg.blacklist.map(id => "<#"+id+">").join(" ")}`;
+					else out = "No channels currently blacklisted.";
 				} else if(args[1] == "add") {
 					if(!args[2]) {
 						out = "Must provide name/mention/id of channel to blacklist.";
 					} else {
-						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch });
+						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch; });
 						if(!channels.find(ch => ch != undefined)) {
 							out = `Could not find ${channels.length > 1 ? "those channels" : "that channel"}.`;
 						} else if(channels.find(ch => ch == undefined)) {
-							out = `Could not find these channels: `;
+							out = "Could not find these channels: ";
 							for(let i = 0; i < channels.length; i++)
 								if(!channels[i]) out += args.slice(2)[i];
 						} else {
 							if(!cfg.blacklist) cfg.blacklist = [];
 							cfg.blacklist = cfg.blacklist.concat(channels);
 							out = `Channel${channels.length > 1 ? "s" : ""} blacklisted successfully.`;
-							fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+							save("servercfg",config);
 						}
 					}
 				} else if(args[1] == "remove") {
 					if(!args[2]) {
 						out = "Must provide name/mention/id of channel to allow.";
 					} else {
-						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch });
+						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch; });
 						if(!channels.find(ch => ch != undefined)) {
 							out = `Could not find ${channels.length > 1 ? "those channels" : "that channel"}.`;
 						} else if(channels.find(ch => ch == undefined)) {
-							out = `Could not find these channels: `;
+							out = "Could not find these channels: ";
 							for(let i = 0; i < channels.length; i++)
 								if(!channels[i]) out += args.slice(2)[i] + " ";
 						} else {
 							if(!cfg.blacklist) cfg.blacklist = [];
-							channels.forEach(ch => { if(cfg.blacklist.includes(ch)) cfg.blacklist.splice(cfg.blacklist.indexOf(ch),1) });
+							channels.forEach(ch => { if(cfg.blacklist.includes(ch)) cfg.blacklist.splice(cfg.blacklist.indexOf(ch),1); });
 							out = `Channel${channels.length > 1 ? "s" : ""} removed from blacklist.`;
 							if(!cfg.blacklist[0]) delete cfg.blacklist;
-							fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+							save("servercfg",config);
 						}
 					}
 				} else {
@@ -692,43 +817,43 @@ bot.cmds = {
 				}
 			} else if(args[0] == "cmdblacklist") {
 				if(!args[1]) {
-					if(cfg.cmdblacklist) out = `Currently cmdblacklisted channels: ${cfg.cmdblacklist.map(id => "<#"+id+">").join(' ')}`;
-					else out = "No channels currently cmdblacklisted."
+					if(cfg.cmdblacklist) out = `Currently cmdblacklisted channels: ${cfg.cmdblacklist.map(id => "<#"+id+">").join(" ")}`;
+					else out = "No channels currently cmdblacklisted.";
 				} else if(args[1] == "add") {
 					if(!args[2]) {
 						out = "Must provide name/mention/id of channel to cmdblacklist.";
 					} else {
-						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch });
+						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch; });
 						if(!channels.find(ch => ch != undefined)) {
 							out = `Could not find ${channels.length > 1 ? "those channels" : "that channel"}.`;
 						} else if(channels.find(ch => ch == undefined)) {
-							out = `Could not find these channels: `;
+							out = "Could not find these channels: ";
 							for(let i = 0; i < channels.length; i++)
 								if(!channels[i]) out += args.slice(2)[i];
 						} else {
 							if(!cfg.cmdblacklist) cfg.cmdblacklist = [];
 							cfg.cmdblacklist = cfg.cmdblacklist.concat(channels);
 							out = `Channel${channels.length > 1 ? "s" : ""} blacklisted successfully.`;
-							fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+							save("servercfg",config);
 						}
 					}
 				} else if(args[1] == "remove") {
 					if(!args[2]) {
 						out = "Must provide name/mention/id of channel to allow.";
 					} else {
-						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch });
+						let channels = args.slice(2).map(arg => resolveChannel(msg,arg)).map(ch => { if(ch) return ch.id; else return ch; });
 						if(!channels.find(ch => ch != undefined)) {
 							out = `Could not find ${channels.length > 1 ? "those channels" : "that channel"}.`;
 						} else if(channels.find(ch => ch == undefined)) {
-							out = `Could not find these channels: `;
+							out = "Could not find these channels: ";
 							for(let i = 0; i < channels.length; i++)
 								if(!channels[i]) out += args.slice(2)[i] + " ";
 						} else {
 							if(!cfg.cmdblacklist) cfg.cmdblacklist = [];
-							channels.forEach(ch => { if(cfg.cmdblacklist.includes(ch)) cfg.cmdblacklist.splice(cfg.cmdblacklist.indexOf(ch),1) });
+							channels.forEach(ch => { if(cfg.cmdblacklist.includes(ch)) cfg.cmdblacklist.splice(cfg.cmdblacklist.indexOf(ch),1); });
 							out = `Channel${channels.length > 1 ? "s" : ""} removed from cmdblacklist.`;
 							if(!cfg.cmdblacklist[0]) delete cfg.cmdblacklist;
-							fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+							save("servercfg",config);
 						}
 					}
 				} else {
@@ -738,6 +863,11 @@ bot.cmds = {
 			send(msg.channel, out);
 		}
 	}
+};
+
+bot.cmds.showhost = {
+	permitted: true,
+	execute: bot.cmds.showuser.execute
 };
 
 if (!auth.inviteCode) {
@@ -759,97 +889,22 @@ function validateGuildCfg(guild) {
 		config[guild.id].lang = "tulpa";
 	if(config[guild.id].log == undefined)
 		config[guild.id].log = null;
-	fs.writeFile("./servercfg.json",JSON.stringify(config,null,2), printError);
+	save("servercfg",config);
 }
 
 function proper(text) {
 	return text.substring(0,1).toUpperCase() + text.substring(1);
 }
 
-function checkTulpa(msg, cfg, tulpa, content, clean, doSubmit = true) {
-	if(clean.startsWith(tulpa.brackets[0]) && clean.endsWith(tulpa.brackets[1])) {
-
-		if (doSubmit)
-		  fetchWebhook(msg.channel).then(hook => {
-			  let data = {
-  					content: content.substring(tulpa.brackets[0].length, content.length-tulpa.brackets[1].length),
-  					username: tulpa.name + (tulpa.tag ? ` ${tulpa.tag}` : "") + (checkTulpaBirthday(tulpa) ? "\uD83C\uDF70" : ""),
-  					avatarURL: tulpa.url
-  				};
-  			if(recent[msg.channel.id] && msg.author.id != recent[msg.channel.id].userID && data.username == recent[msg.channel.id].name)
-  				data.username = data.username.substring(0,1) + "\u200a" + data.username.substring(1);
-  			if(msg.attachments[0]) {
-  				sendAttachmentsWebhook(msg, cfg, data, content, hook);
-  			} else {
-  				bot.executeWebhook(hook.id,hook.token,data)
-  				.catch(e => { if(e.code == 10015) {
-  					delete webhooks[msg.channel.id];
-  					fetchWebhook(msg.channel).then(hook => {
-  						bot.executeWebhook(hook.id,hook.token,data);
-  					}).catch(e => send(msg.channel, "Webhook deleted and error creating new one. Check my permissions?"));;
-  				}});
-  			}
-  			if(!tulpa.posts) tulpa.posts = 0;
-  			tulpa.posts++;
-  			if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
-  				send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.lang + " webhook message will show.");
-  			recent[msg.channel.id] = { userID: msg.author.id, name: data.username, tulpa: tulpa };
-  			if(cfg.log && msg.channel.guild.channels.has(cfg.log)) {
-  				send(msg.channel.guild.channels.get(cfg.log), `Name: ${tulpa.name}\nRegistered by: ${msg.author.username}#${msg.author.discriminator}\nChannel: <#${msg.channel.id}>\nMessage: ${content.substring(tulpa.brackets[0].length, content.length-tulpa.brackets[1].length)}`);
-  			}
-			
-  		}).catch(e => {
-  			send(msg.channel, e);
-  		});
-		return true;
-	} else return false;
-}
-
-async function sendAttachmentsWebhook(msg, cfg, data, content, hook) {
-	let files = [];
-	for(let i = 0; i < msg.attachments.length; i++) {
-		files.push({ file: await attach(msg.attachments[i].url), name: msg.attachments[i].filename });
-	}
-	data.file = files;
-	bot.executeWebhook(hook.id,hook.token,data)
-	.catch(e => { if(e.code == 10015) {
-		delete webhooks[msg.channel.id];
-		fetchWebhook(msg.channel).then(hook => {
-			bot.executeWebhook(hook.id,hook.token,data);
-		}).catch(e => send(msg.channel, "Webhook deleted and error creating new one. Check my permissions?"));;
-	}});
-}
-
-function fetchWebhook(channel) {
-	return new Promise((resolve, reject) => {
-		if(webhooks[channel.id])
-			resolve(webhooks[channel.id]);
-		else if(!channel.permissionsOf(bot.user.id).has('manageWebhooks'))
-			reject("Proxy failed: Missing 'Manage Webhooks' permission in this channel.");
-		else {
-			channel.createWebhook({ name: "Tupperhook" }).then(hook => {
-				webhooks[channel.id] = { id: hook.id, token: hook.token };
-				resolve(webhooks[channel.id]);
-				fs.writeFile("./webhooks.json",JSON.stringify(webhooks,null,2), printError);
-			}).catch(e => { reject("Proxy failed with unknown reason: Error " + e.code); });
-		}
-	});
-}
-
-function attach(url, name) {
-	return new Promise(function(resolve, reject) {
-		request({url:url,encoding:null}, (err, res, data) => {
-			console.log(`${url}: ${data.length}`);
-			resolve(data);
-		});
-	});
+function save(name, obj) {
+	return fs.writeFile(`${__dirname}/${name}.json`,JSON.stringify(obj,null,2), printError);
 }
 
 function generateTulpaField(tulpa) {
 	return {
 		name: tulpa.name,
 		value: `${tulpa.tag ? ("Tag: " + tulpa.tag + "\n") : ""}Brackets: ${tulpa.brackets[0]}text${tulpa.brackets[1]}\nAvatar URL: ${tulpa.url}${tulpa.birthday ? ("\nBirthday: "+new Date(tulpa.birthday).toDateString()) : ""}\nTotal messages sent: ${tulpa.posts}${tulpa.desc ? ("\n"+tulpa.desc) : ""}`
-	}
+	};
 }
 
 function checkTulpaBirthday(tulpa) {
@@ -881,20 +936,22 @@ function printError(err) {
 function send(channel, message, file, typing) {
 	if(typing) {
 		return channel.sendTyping().then(() => {
-			setTimeout(() => channel.createMessage(message,file), Math.min(6*message.length+750,4000))
+			setTimeout(() => channel.createMessage(message,file), Math.min(6*message.length+750,4000));
 		});
 	}
 	channel.createMessage(message, file);
 }
 
 function getMatches(string, regex) {
-  var matches = [];
-  var match;
-  while (match = regex.exec(string)) {
-		match.splice(1).forEach(m => { if(m) matches.push(m) });
-  }
-  return matches;
+	var matches = [];
+	var match;
+	while (match = regex.exec(string)) {
+		match.splice(1).forEach(m => { if(m) matches.push(m); });
+	}
+	return matches;
 }
+
+process.on("unhandledRejection", console.log);
 
 bot.connect();
 
