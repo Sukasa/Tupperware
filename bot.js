@@ -59,6 +59,8 @@ bot.on("error", console.error);
 
 bot.on("messageCreate", async function (msg) {
 	if(msg.author.bot) return;
+	if(msg.channel instanceof Eris.PrivateChannel)
+		return send(msg.channel, "Use of this bot via private message has been disabled");
 	let cfg = msg.channel.guild && config[msg.channel.guild.id] || { prefix: "tul!", rolesEnabled: false, lang: "tulpa"};
 	if (msg.content.startsWith(cfg.prefix) && (!cfg.cmdblacklist || !cfg.cmdblacklist.includes(msg.channel.id))) {
 		var args = msg.content.substr(cfg.prefix.length).split(" ");
