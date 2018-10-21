@@ -439,6 +439,8 @@ bot.cmds = {
 				out = tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).url;
 			} else if(!validUrl.isWebUri(args[1])) {
 				out = "Malformed url.";
+			} else if (args[1].indexOf("imgur.com/a/") != -1) {
+				return send(msg.channel, "That is an Imgur album link.  You need to give me the direct URL of the image in that album that you want used");
 			} else {
 				request(args[1], { method: "HEAD" }, (err, res) => {
 					if(err || !res.headers["content-type"] || !res.headers["content-type"].startsWith("image")) return send(msg.channel, "I couldn't find an image at that URL. Make sure it's a direct link (ends in .jpg or .png for example).");
