@@ -92,23 +92,6 @@ bot.on("messageCreate", async function (msg) {
 					replace.push([msg, cfg, t, msg.content.substring(t.brackets[0].length, msg.content.length-t.brackets[1].length)]);
 					break;
 				}
-			};
-			if(doSubstitution) {
-				if(msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
-					setTimeout(() => msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }}),100);
-				return fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
-			} else {
-				for(let t of tulpae[msg.author.id]) {
-					if(checkTulpa(msg, cfg, t, msg.content, clean)) {
-						doSubstitution = true;
-						break;
-					}
-				};
-				if(doSubstitution) {
-					if(msg.channel.permissionsOf(bot.user.id).has('manageMessages'))
-						setTimeout(() => msg.delete().catch(e => { if(e.code == 50013) { send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); }}),100);
-					return fs.writeFile("./tulpae.json",JSON.stringify(tulpae,null,2), printError);
-				}
 			}
 		}
 			
