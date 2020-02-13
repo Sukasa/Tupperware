@@ -22,6 +22,91 @@ const feedbackID = "431722290971934721";
 const zwsp = String.fromCharCode(8203); //zero-width space for embed formatting
 var disconnects = 0;
 
+var aniRegex = /^<a:[^\s:]+:\d+>$/mi;
+var diceRegex = /!(?:(?:roll\s|dice\s)?((?:\d+)?)d(\d+))\s*((?:\s*?(?:-|\+|top|bottom)\s*-?\d+\s*?)+)?/gi;
+var modifierRegex = /(?:(\+|\-|top|bottom)\s*(\d+))/gi;
+
+
+function reduceDice(state, dice) {
+	
+	if (dice.valid) {
+		state.content = state.content + state.sep + dice.value;
+		state.sum = state.sum + dice.value;
+	} else {
+		state.content = state.content + state.sep + "||" + dice.value + "||";
+	}
+	state.sep = ", ";
+	return state;
+}
+
+function handleDiceRoll(rollMatch) {
+	var numDice = rollMatch[1] || 1;
+	var numSides = rollMatch[2];
+	var modifiers = rollMatch[3];
+	var finalAdjust = 0;
+	
+	var rolls = [];
+	for(var d = numDice; d > 0; d--)
+		rolls.push({value : Math.floor(Math.random() * numSides) + 1, valid : true});
+	
+	if (modifiers != null) {
+		var modifier;
+		while (modifier = modifierRegex.exec(modifiers)) {
+			// Apply modifier
+			var by = modifier[2];
+			var last;
+			var indice = 0;
+			switch(modifier[1]) {
+				case "top":
+					by = numDice - by;
+					for (var passes = 0; passes < by; passes++) {
+						last = numSides + 1;
+						for (var test = 0; test < numDice; test++) {
+							var roll = rolls[test];
+							if (last > roll.value && roll.valid) {
+								indice = test;
+								last = roll.value;
+							}
+						}
+						rolls[indice].valid = false;
+					}
+					break;
+				case "bottom":
+					by = numDice - by;
+					for (var passes = 0; passes < by; passes++) {
+						last = 0;
+						for (var test = 0; test < numDice; test++) {
+							var roll = rolls[test];
+							if (last < roll.value && roll.valid) {
+								indice = test;
+								last = roll.value;
+							}
+						}
+						rolls[indice].valid = false;
+					}
+					break;
+				case "+":
+					finalAdjust = Number(finalAdjust) + Number(by);
+					break;
+				case "-":
+					finalAdjust = Number(finalAdjust) - Number(by);
+					break;
+			}
+		}
+	}
+	// Modifiers applied and final adjustment done.  Now to make the output string.
+	
+	var finalResult = rolls.reduce(reduceDice, {content: "", sep: "", sum: 0});
+	
+	var output = "**" + numDice + "d" + numSides + (modifiers ? " " + modifiers : "") + "**: " + finalResult.content;
+	if (finalAdjust > 0)
+		output = output + " + " + finalAdjust;
+	if (finalAdjust < 0)
+		output = output + " - " + Math.abs(finalAdjust);
+	
+	return output + " = **" + (finalResult.sum + finalAdjust) + "**";
+}
+
 logger.configure({
 	level: "debug",
 	transports: [
@@ -47,7 +132,6 @@ bot.on("ready", () => {
 
 bot.on("guildCreate", validateGuildCfg);
 
-
 bot.on("disconnect", function() {
 	logger.warn("Bot disconnected! Attempting to reconnect.");
 	disconnects++;
@@ -61,8 +145,40 @@ bot.on("messageCreate", async function (msg) {
 	if(msg.author.bot) return;
 	if(msg.channel instanceof Eris.PrivateChannel)
 		return send(msg.channel, "Use of this bot via private message has been disabled");
-	let cfg = msg.channel.guild && config[msg.channel.guild.id] || { prefix: "tul!", rolesEnabled: false, lang: "tulpa"};
-	if (msg.content.startsWith(cfg.prefix) && (!cfg.cmdblacklist || !cfg.cmdblacklist.includes(msg.channel.id))) {
+	let cfg = msg.channel.guild && config[msg.channel.guild.id] || { prefix: "t!", rolesEnabled: false, lang: "tulpa"};
+	
+	if (diceRegex.test(msg.content) && (!cfg.diceblacklist || !cfg.diceblacklist.includes(msg.channel.id))) {
+		
+		diceRegex.lastIndex = 0;
+		var resultSets = [];
+		var match;
+		
+		while (match = diceRegex.exec(msg.content))
+			resultSets.push(handleDiceRoll(match));
+		
+		const hook = await fetchWebhook(msg.channel)
+		const data = {
+			wait: true,
+			content: resultSets.join("\n"),
+			username: `Dice Roll${resultSets.length > 1 ? "s" : ""}`,
+			avatarURL: "https://greenfirework.com/dicerollflat.png",
+		};
+		
+		try {
+			await bot.executeWebhook(hook.id,hook.token,data);
+		} catch (e) {
+			console.log(e);
+			if(e.code === 10015) {
+				delete webhooks[msg.channel.id];
+				const hook = await fetchWebhook(msg.channel);
+				return bot.executeWebhook(hook.id,hook.token,data);
+			}
+		}
+		
+		return;
+	}
+	
+	if (msg.content.toLowerCase().startsWith(cfg.prefix) && (!cfg.cmdblacklist || !cfg.cmdblacklist.includes(msg.channel.id))) {
 		var args = msg.content.substr(cfg.prefix.length).split(" ");
 		var cmd = args.shift();
 		
@@ -72,14 +188,17 @@ bot.on("messageCreate", async function (msg) {
 		}
 	} else if(tulpae[msg.author.id] && !(msg.channel instanceof Eris.PrivateChannel) && (!cfg.blacklist || !cfg.blacklist.includes(msg.channel.id))) {
 		let clean = msg.cleanContent || msg.content;
+		if (aniRegex.test(clean))
+			return;
 		clean = clean.replace(/(<:.+?:\d+?>)|(<@!?\d+?>)/,"cleaned");
 		let cleanarr = clean.split("\n");
 		let lines = msg.content.split("\n");
 		let replace = [];
+		let bracketSet = null;
 		for(let i = 0; i < lines.length; i++) {
 			tulpae[msg.author.id].forEach(t => {
-				if(checkTulpa(msg, t, cleanarr[i])) {
-					replace.push([msg,cfg,t,lines[i].substring(t.brackets[0].length, lines[i].length-t.brackets[1].length)]);
+				if(bracketSet = checkTulpa(msg, t, cleanarr[i])) {
+					replace.push([msg,cfg,t,lines[i].substring(bracketSet[0].length, lines[i].length-bracketSet[1].length)]);
 				}
 			});
 		}
@@ -88,8 +207,8 @@ bot.on("messageCreate", async function (msg) {
 		
 		if(!replace[0]) {
 			for(let t of tulpae[msg.author.id]) {
-				if(checkTulpa(msg, t, clean)) {
-					replace.push([msg, cfg, t, msg.content.substring(t.brackets[0].length, msg.content.length-t.brackets[1].length)]);
+				if(bracketSet = checkTulpa(msg, t, clean)) {
+					replace.push([msg, cfg, t, msg.content.substring(bracketSet[0].length, msg.content.length-bracketSet[1].length)]);
 					break;
 				}
 			}
@@ -106,6 +225,17 @@ bot.on("messageCreate", async function (msg) {
 	}
 });
 
+bot.on("messageReactionAdd", async function (message, emoji, userID) {
+	if (emoji.name == "\u274c" && recent[message.channel.id] && recent[message.channel.id].find(r => r.userID == userID && message.id == r.id)) {
+		
+		if(!message.channel.guild || message.channel.permissionsOf(bot.user.id).has("manageMessages")) {
+			bot.deleteMessage(message.channel.id,message.id).catch(e => { if(e.code != 10008) throw e; });
+		}
+		
+		return;
+	}
+});
+
 async function replaceMessage(msg, cfg, tulpa, content) {
 	const hook = await fetchWebhook(msg.channel);
 	const data = {
@@ -115,7 +245,7 @@ async function replaceMessage(msg, cfg, tulpa, content) {
 		avatarURL: tulpa.url,
 	};
 
-	if(recent[msg.channel.id] && msg.author.id !== recent[msg.channel.id].userID && data.username === recent[msg.channel.id].name) {
+	if(recent[msg.channel.id] && msg.author.id !== recent[msg.channel.id][0].userID && data.username === recent[msg.channel.id][0].name) {
 		data.username = data.username.substring(0,1) + "\u200a" + data.username.substring(1);
 	}
 
@@ -123,8 +253,9 @@ async function replaceMessage(msg, cfg, tulpa, content) {
 		return sendAttachmentsWebhook(msg, cfg, data, content, hook);
 	}
 
+	let webmsg;
 	try {
-		await bot.executeWebhook(hook.id,hook.token,data);
+		webmsg = await bot.executeWebhook(hook.id,hook.token,data);
 	} catch (e) {
 		console.log(e);
 		if(e.code === 10015) {
@@ -144,15 +275,31 @@ async function replaceMessage(msg, cfg, tulpa, content) {
 	if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has("manageMessages")) {
 		send(msg.channel, `Warning: I do not have permission to delete messages. Both the original message and ${cfg.lang} webhook message will show.`);
 	}
-	recent[msg.channel.id] = {
+	recent[msg.channel.id] = recent[msg.channel.id] || [];
+	recent[msg.channel.id].unshift({
 		userID: msg.author.id,
 		name: data.username,
 		tulpa: tulpa,
-	};
+		id: webmsg.id,
+		tag: `${msg.author.username}#${msg.author.discriminator}`
+	});
+	recent[msg.channel.id] = recent[msg.channel.id].slice(0,8)
 }
 
 function checkTulpa(msg, tulpa, clean) {
-	return clean.startsWith(tulpa.brackets[0]) && clean.endsWith(tulpa.brackets[1]) && ((clean.length == (tulpa.brackets[0].length + tulpa.brackets[1].length) && msg.attachments[0]) || clean.length > (tulpa.brackets[0].length + tulpa.brackets[1].length));
+	
+	let check = brackets => clean.startsWith(brackets[0]) && clean.endsWith(brackets[1]) && ((clean.length == (brackets[0].length + brackets[1].length) && msg.attachments[0]) || clean.length > (brackets[0].length + brackets[1].length));
+	
+	if (check(tulpa.brackets))
+		return tulpa.brackets;
+	
+	for(idx in tulpa.alternates || Array()) {
+		if (check(tulpa.alternates[idx]))
+			return tulpa.alternates[idx];
+	}
+	
+	return false;
+	
 }
 
 async function sendAttachmentsWebhook(msg, cfg, data, content, hook, tulpa) {
@@ -186,7 +333,16 @@ async function sendAttachmentsWebhook(msg, cfg, data, content, hook, tulpa) {
 				tulpa.posts++;
 				if(!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
 					send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.lang + " webhook message will show.");
-				recent[msg.channel.id] = { userID: msg.author.id, name: data.username, tulpa: tulpa };
+				
+				recent[msg.channel.id] = recent[msg.channel.id] || [];
+				recent[msg.channel.id].unshift({
+					userID: msg.author.id,
+					name: data.username,
+					tulpa: tulpa,
+					id: webmsg.id,
+					tag: `${msg.author.username}#${msg.author.discriminator}`
+				});
+				recent[msg.channel.id] = recent[msg.channel.id].slice(0,8);
 				resolve();
 			}).catch(reject);
 	});
@@ -268,7 +424,119 @@ bot.cmds = {
 		}
 	},
 	
-	//register new tulpa
+	form: {
+		help: cfg => "Configure alternate forms for a tulpa (overrides `" + cfg.prefix + "avatar`)",
+		usage: cfg =>  [ "form <name> <formName> - Switch a " + cfg.lang + "'s form",
+			"form <name> add <formName> <formUrl> - Add a new named form to a " + cfg.lang + " (4 max)", 
+			"form <name> remove <formName> - Remove a named form from a " + cfg.lang + ".  Cannot remove their last form",
+			"form <name> rename <oldName> <newName> - Rename a form"],
+		permitted: () => true,
+		execute: function(msg, args, cfg) {
+			let out = "";
+			args = getMatches(msg.content,/['](.*?)[']|(\S+)/gi).slice(1);			
+			let checkName = (idx) => tulpae[msg.author.id] && tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[idx].toLowerCase());
+			
+			if(!args[0]) {
+				return bot.cmds.help.execute(msg, ["form"], cfg);			
+			}
+			
+			let tulpa = checkName(0);
+			
+			if (!tulpa) {
+				out = "You don't have a " + cfg.lang + " with that name registered."
+			} else {
+				
+				tulpa.forms = tulpa.forms || { default: tulpa.url};
+				tulpa.currentForm = tulpa.currentForm || "default";
+				
+				if (!args[1]) {
+					out = `${tulpa.name}'s current forms:`;
+					for(var form in tulpa.forms) {
+						out = out + "\n`" + form + "`";
+						if (tulpa.forms[form] == tulpa.url)
+							out = out + " (current)";
+					}
+				} else {
+				
+					switch(args[1].toLowerCase()) {
+					case "add":
+						if (Object.keys(tulpa.forms).length >= 4) {
+							out = "Cannot add more forms - at form limit";
+						} else if (["add", "remove", "rename"].includes(args[2])) {
+							out = "Cannot add a form named matching a reserved keyword";
+						} else if (resolveKey(tulpa.forms, args[2])) {
+							out = tulpa.name + " already has a form named " + args[2];
+						} else {
+							if(!validUrl.isWebUri(args[3])) {
+								out = "Malformed url.";
+							} else if (args[3].indexOf("imgur.com/a/") != -1) {
+								return send(msg.channel, "That is an Imgur album link.  You need to give me the direct URL of the image in that album that you want used");
+							} else {
+								request(args[3], { method: "HEAD" }, (err, res) => {
+									if(err || !res.headers["content-type"] || !res.headers["content-type"].startsWith("image")) return send(msg.channel, "I couldn't find an image at that URL. Make sure it's a direct link (ends in .jpg or .png for example).");
+									if(Number(res.headers["content-length"]) > 1000000) {
+										return send(msg.channel, "That image is too large and Discord will not accept it. Please use an image under 1 megabyte.");
+									}
+									tulpa.forms[args[2].toLowerCase()] = args[3];
+									save("tulpae",tulpae);
+									send(msg.channel, "Added new form.  Select this form with `" + cfg.prefix + "form '" + tulpa.name + "' '" + args[2].toLowerCase() + "'`");
+								});
+								return;
+							}
+						}
+						break;
+					case "remove":
+						let formName = resolveKey(tulpa.forms, args[2]);
+						if (!formName) {
+							out = "No form registered under the name " + args[2] + ".";
+						} else if (Object.keys(tulpa.forms).length <= 1) {
+							out = "Cannot remove the only registered form.";
+						} else {
+							delete tulpa.forms[formName];
+							out = "Removed form '" + formName + "'.  If this was the active form, please select a new form.";
+							save("tulpae",tulpae);
+						}
+						break;
+					case "rename":
+						if (!args[3]) {
+							out = "Please provide both an old and new name for renaming";
+						} else {
+							let oldFormName = resolveKey(tulpa.forms, args[2]);
+							let newFormName = args[3];
+							
+							if (!oldFormName) {
+								out = "No form registered under the name " + args[2] + ".";
+							} else if (resolveKey(tulpa.forms, newFormName) && oldFormName.toLowerCase() != newFormName.toLowerCase()) {
+								out = "Form name " + args[3] + " already registered.";
+							} else if (["add", "remove", "rename"].includes(newFormName)){
+								out = "Cannot rename form to match a reserved keyword";
+							} else {
+								tulpa.forms[newFormName] = tulpa.forms[oldFormName];
+								delete tulpa.forms[oldFormName];
+								out = "Renamed form '" + args[2] + "' to '" + args[3] + "'.";
+								save("tulpae",tulpae);
+							}
+						}
+						break;
+					default:
+						let selectForm = resolveKey(tulpa.forms, args[1]);
+						// Select a form
+						if (!selectForm) {
+							out = "No form registered with the name '" + args[1] + "'.";
+						} else {
+							tulpa.url = tulpa.forms[selectForm];
+							out = "Switched to form '" + args[1] + "'";
+							save("tulpae",tulpae);
+						}
+				}
+				}
+			}
+			
+			
+			send(msg.channel, out);
+		}
+	},
+	
 	register: {
 		help: cfg => "Register a new " + cfg.lang + "",
 		usage: cfg =>  ["register <name> <brackets> - Register a new " + cfg.lang + ".\n\t<name> - the " + cfg.lang + "'s name, for multi-word names surround this argument in `''`\n\t<brackets> - the word 'text' surrounded by any characters on one or both sides"],
@@ -299,7 +567,8 @@ bot.cmds = {
 					url: "https://i.imgur.com/ZpijZpg.png",
 					brackets: brackets,
 					posts: 0,
-					host: msg.author.id
+					host: msg.author.id,
+					alternates: Array()
 				};
 				tulpae[msg.author.id].push(tulpa);
 				let guilds = Object.keys(config).filter(id => config[id].rolesEnabled && bot.guilds.has(id) && bot.guilds.get(id).members.has(msg.author.id)).map(id => bot.guilds.get(id));
@@ -315,13 +584,12 @@ bot.cmds = {
 					});
 				}
 				save("tulpae",tulpae);
-				out = proper(cfg.lang) + " registered successfully!\nName: " + tulpa.name + "\nBrackets: " + `${brackets[0]}text${brackets[1]}` + "\nUse `" + cfg.prefix + "rename`, `" + cfg.prefix + "brackets`, and `" + cfg.prefix + "avatar` to set/update your " + cfg.lang + "'s info."; 
+				out = proper(cfg.lang) + " registered successfully!\nName: " + tulpa.name + "\nBrackets: " + `${brackets[0]}text${brackets[1]}` + "\nUse `" + cfg.prefix + "rename`, `" + cfg.prefix + "brackets`, `" + cfg.prefix + "avatar`, and `" + cfg.prefix + "form` to set/update your " + cfg.lang + "'s info."; 
 			}
 			send(msg.channel, out);
 		}
 	},
 	
-	//unregister tulpa
 	remove: {
 		help: cfg => "Unregister a " + cfg.lang + "",
 		usage: cfg =>  ["remove <name> - Unregister the named " + cfg.lang + " from your list"],
@@ -442,6 +710,7 @@ bot.cmds = {
 			} else if (args[1].indexOf("imgur.com/a/") != -1) {
 				return send(msg.channel, "That is an Imgur album link.  You need to give me the direct URL of the image in that album that you want used");
 			} else {
+				
 				request(args[1], { method: "HEAD" }, (err, res) => {
 					if(err || !res.headers["content-type"] || !res.headers["content-type"].startsWith("image")) return send(msg.channel, "I couldn't find an image at that URL. Make sure it's a direct link (ends in .jpg or .png for example).");
 					if(Number(res.headers["content-length"]) > 1000000) {
@@ -533,14 +802,61 @@ bot.cmds = {
 	
 	brackets: {
 		help: cfg => "View or change a " + cfg.lang + "'s brackets",
-		usage: cfg =>  ["brackets <name> [brackets] - if brackets are given, change the " + cfg.lang + "'s brackets, if not, simply echo the current one"],
+		usage: cfg =>  ["brackets[alternate [#]] <name> [brackets] - if brackets are given, change the " + cfg.lang + "'s brackets, if not, simply echo the current one.  Can also specify alternate brackets, starting from 1.  Omit # to default to alternate 1"],
 		desc: cfg => "Brackets must be the word 'text' surrounded by any symbols or letters, i.e. `[text]` or `>>text`",
 		permitted: () => true,
 		execute: function(msg, args, cfg) {
+			
+			let checkName = (idx) => tulpae[msg.author.id] && tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[idx].toLowerCase());
+			
 			let out = "";
 			args = getMatches(msg.content,/['](.*?)[']|(\S+)/gi).slice(1);
 			if(!args[0]) {
 				return bot.cmds.help.execute(msg, ["brackets"], cfg);
+			} else if (args[0].toLowerCase() == "alternate"  &&(checkName(1) || (!isNaN(args[1]) && checkName(2)))) { // If we're prefixing 'alternate', and can find a valid name later down the line...
+				const reducer = (a, c) => a + ", " + c;
+				
+				let nameIndex = checkName(1) ? 1 : 2;
+				let tupper = checkName(nameIndex);
+				
+				let alternate = nameIndex == 2 ? Math.floor(Number(args[1])) : 1;
+				
+				if (alternate < 1) {
+					out = "Cannot address this alternate";
+				} else if (alternate > 4) {
+					out = "YOu are limited to 4 alternates at this time";
+				} else {					
+					let brackets = args.slice(nameIndex + 1).join(" ").split("text");
+					
+					if(brackets.length == 1 && brackets[0] == "") {
+						tupper.alternates = tupper.alternates || Array();
+						
+						if (tupper.alternates.length >= alternate) {
+							out = `Alternate brackets for ${tupper.name}: ${tupper.alternates[alternate-1][0]}text${tupper.alternates[alternate-1][1]}`;
+						} else {
+							out = "Unable to display alternate; does not exist";
+						}
+					} else if(brackets.length == 1 && brackets[0] == "remove") {
+						tupper.alternates = tupper.alternates || Array();
+						
+						if (tupper.alternates.length >= alternate) {
+							out = `Removing alternate bracket set ${alternate}`;
+							tupper.alternates.splice(alternate - 1, 1);
+							save("tulpae",tulpae);
+						} else {
+							out = "Unable to remove alternate; does not exist";
+						}
+					} else if(brackets.length < 2) {
+						out = "No 'text' found to detect brackets with. For the last part of your command, enter the word 'text' surrounded by any characters (except `''`).\nThis determines how the bot detects if it should replace a message.";
+					} else if(!brackets[0] && !brackets[1]) {
+						out = "Need something surrounding 'text'.";
+					} else {
+						tupper.alternates = tupper.alternates || Array();
+						tupper.alternates[alternate - 1] = brackets;
+						save("tulpae",tulpae);
+						out = "Alternate brackets updated successfully.";
+					}
+			}
 			} else if(!tulpae[msg.author.id] || !tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase())) {
 				out = "You don't have a " + cfg.lang + " with that name registered.";
 			} else if(!args[1]) {
@@ -596,8 +912,8 @@ bot.cmds = {
 		execute: function(msg, args, cfg) {
 			if(!recent[msg.channel.id]) send(msg.channel, "No " + cfg.lang + "s have spoken in this channel since I last started up, sorry.");
 			else {
-				let user = bot.users.get(recent[msg.channel.id].userID);
-				send(msg.channel, `Last ${cfg.lang} message sent by ${recent[msg.channel.id].tulpa.name}, registered to ${user ? user.username + "#" + user.discriminator : "(unknown user " + recent[msg.channel.id].userID + ")"}`);
+				let user = bot.users.get(recent[msg.channel.id][0].userID);
+				send(msg.channel, `Last ${cfg.lang} message sent by ${recent[msg.channel.id][0].tulpa.name}, registered to ${user ? user.username + "#" + user.discriminator : "(unknown user " + recent[msg.channel.id][0].userID + ")"}`);
 			}
 		}
 	},
@@ -852,6 +1168,10 @@ bot.cmds = {
 	}
 };
 
+// Some command aliasing
+bot.cmds.forms = bot.cmds.form;
+bot.cmds.unregister = bot.cmds.remove;
+
 bot.cmds.showhost = {
 	permitted: true,
 	execute: bot.cmds.showuser.execute
@@ -862,7 +1182,7 @@ if (!auth.inviteCode) {
 }
 
 function updateStatus() {
-	bot.editStatus({ name: `say ${config.prefix}help`});
+	bot.editStatus({ name: `Doing botty things`});
 }
 
 function validateGuildCfg(guild) {
@@ -890,7 +1210,9 @@ function save(name, obj) {
 function generateTulpaField(tulpa) {
 	return {
 		name: tulpa.name,
-		value: `${tulpa.tag ? ("Tag: " + tulpa.tag + "\n") : ""}Brackets: ${tulpa.brackets[0]}text${tulpa.brackets[1]}\nAvatar URL: ${tulpa.url}${tulpa.birthday ? ("\nBirthday: "+new Date(tulpa.birthday).toDateString()) : ""}\nTotal messages sent: ${tulpa.posts}${tulpa.desc ? ("\n"+tulpa.desc) : ""}`
+		value: `${tulpa.tag ? ("Tag: " + tulpa.tag + "\n") : ""}Brackets: ${[tulpa.brackets[0]+"text"+tulpa.brackets[1]].concat(tulpa.alternates || []).reduce((a,c) => a + ", " + (c[0] + "text" + c[1]) )}
+		Avatar URL: ${tulpa.url}${tulpa.birthday ? ("\nBirthday: "+new Date(tulpa.birthday).toDateString()) : ""}
+		${ tulpa.forms ? "Forms: " + Object.keys(tulpa.forms).reduce((a, c) => a + ", " + c) + "\n" : ""}Total messages sent: ${tulpa.posts}${tulpa.desc ? ("\n"+tulpa.desc) : ""} `
 	};
 }
 
@@ -899,6 +1221,13 @@ function checkTulpaBirthday(tulpa) {
 	let day = new Date(tulpa.birthday);
 	let now = new Date();
 	return day.getDate() == now.getDate() && day.getMonth() == now.getMonth();
+}
+
+function resolveKey(haystack, needle) {
+	for (var key in haystack)
+		if (key.toLowerCase() == needle.toLowerCase())
+			return key;
+	return null;
 }
 
 function resolveUser(msg, text) {
