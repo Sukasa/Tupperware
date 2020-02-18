@@ -43,6 +43,10 @@
     <Folder Include=".\components\" />
     <Folder Include=".\commands\" />
     <Folder Include=".\listeners\" />
+    <Folder Include="commands\" />
+    <Folder Include="components\" />
+    <Folder Include="listeners\" />
+    <Folder Include="messageHandlers\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
