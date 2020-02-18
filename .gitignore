@@ -65,9 +65,13 @@ typings/
 node_modules
 
 #config files
-auth.json
-servercfg.json
-tulpae.json
-webhooks.json
+*auth.json
+*servercfg.json
+*tulpae.json
+*webhooks.json
 *dev.js*
+
+#Editing stuff
+*.suo
+*.user
 package-lock.json
