@@ -1,3 +1,4 @@
+const priorities = require("../component/priorities");
 let diceRegex = /!(?:(?:roll\s|dice\s)?((?:\d+)?)d(\d+))\s*((?:\s*?(?:-|\+|top|bottom|drop)\s*-?\d+\s*?)+)?/gi;
 let modifierRegex = /(?:(\+|\-|top|bottom|drop)\s*(\d+))/gi;
 
@@ -83,6 +84,8 @@ function handleDiceRoll(rollMatch) {
 
 
 module.exports = {
+	priority: priorities.MEDIUM,
+
 	test: function(msg, bot)  {
 		let cfg = msg.channel.guild && bot.config[msg.channel.guild.id] || { prefix: "t!", rolesEnabled: false, lang: "tulpa" };
 		return (diceRegex.test(msg.content) && (!cfg.diceblacklist || !cfg.diceblacklist.includes(msg.channel.id)));

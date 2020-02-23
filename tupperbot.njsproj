@@ -30,11 +30,25 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include=".gitignore" />
     <Content Include=".\components\grammar.js" />
     <Content Include=".\messageHandlers\diceHandler.js" />
     <Content Include=".\bot.js" />
     <Content Include=".\package.json" />
     <Content Include=".\README.md" />
+    <Content Include="commands\form.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="commands\help.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="LICENSE" />
+    <Content Include="listeners\messageReactionAdd.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="listeners\ready.js">
+      <SubType>Code</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include=".\commands\" />
@@ -47,6 +61,7 @@
     <Folder Include="components\" />
     <Folder Include="listeners\" />
     <Folder Include="messageHandlers\" />
+    <Folder Include="config\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
