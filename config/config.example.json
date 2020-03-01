@@ -1,0 +1,12 @@
+{
+  "discord": "-snip-",
+  "owner": "-your ID here-",
+  "inviteCode": "-snip-",
+  "name": "Tupperbot",
+  "maxForms": 8,
+  "maxBrackets": 8,
+  "maxBioLength": 200,
+  "noDeferredSave": false,
+  "allowDMs": true,
+  "maxImageDimension": 1024
+}

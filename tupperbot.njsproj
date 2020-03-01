@@ -31,24 +31,73 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
-    <Content Include=".\components\grammar.js" />
+    <Content Include="components\language.js" />
     <Content Include=".\messageHandlers\diceHandler.js" />
     <Content Include=".\bot.js" />
     <Content Include=".\package.json" />
     <Content Include=".\README.md" />
+    <Content Include="commands\birthday.js" />
+    <Content Include="commands\bio.js" />
+    <Content Include="commands\default.js" />
     <Content Include="commands\form.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="commands\register.js" />
+    <Content Include="commands\remove.js" />
+    <Content Include="commands\list.js" />
+    <Content Include="commands\avatar.js" />
+    <Content Include="commands\describe.js" />
+    <Content Include="commands\brackets.js" />
+    <Content Include="commands\tag.js" />
+    <Content Include="commands\showuser.js" />
+    <Content Include="commands\find.js" />
+    <Content Include="commands\invite.js" />
+    <Content Include="commands\cfg.js" />
+    <Content Include="commands\rename.js" />
     <Content Include="commands\help.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="components\configuration.js" />
+    <Content Include="components\logging.js" />
+    <Content Include="components\tulpae.js" />
+    <Content Include="components\messaging.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="config\config.json" />
+    <Content Include="config\newServer.json" />
+    <Content Include="config\newTulpa.json" />
+    <Content Include="config\newUser.json" />
+    <Content Include="config\servers.json" />
+    <Content Include="config\users.json" />
+    <Content Include="config\webhooks.json" />
+    <Content Include="config\_tulpae.json" />
+    <Content Include="listeners\guildCreate.js" />
+    <Content Include="listeners\error.js" />
+    <Content Include="listeners\disconnect.js" />
+    <Content Include="util\priorities.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="components\rendering.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="components\resolvers.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="components\webhooks.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="LICENSE" />
+    <Content Include="listeners\messageCreate.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="listeners\messageReactionAdd.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="listeners\ready.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="messageHandlers\tulpaHandler.js" />
+    <Content Include="messageHandlers\commandHandler.js" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include=".\commands\" />
@@ -62,6 +111,7 @@
     <Folder Include="listeners\" />
     <Folder Include="messageHandlers\" />
     <Folder Include="config\" />
+    <Folder Include="util\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
