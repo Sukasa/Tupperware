@@ -1,0 +1,13 @@
+{
+  "prefix": "t!",
+  "rolesEnabled": false,
+  "singular": "tulpa",
+  "plural": "tulpae",
+  "singularArticle": "a",
+  "log": null,
+  "advisoryConfigured": false,
+  "advisory": null,
+  "coexistenceMode": true,
+  "cmdblacklist": [],
+  "blacklist": []
+}

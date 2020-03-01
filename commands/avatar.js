@@ -1,36 +1,32 @@
-const { article, proper } = require("../components/grammar");
+module.exports = function (bot) {
+	return {
+		help: cfg => `View or change ${cfg.singularArticle} ${cfg.singular}'s avatar`,
+		usage: cfg => [`avatar <name> [url] - if url is specified, change the ${cfg.singular}'s avatar, if not, simply echo the current one`],
+		permitted: () => true,
+		desc: cfg => "The specified URL must be a direct link to an image - that is, the URL should end in .jpg or .png or another common image filetype. Also, the linked image cannot be over 1 MByte in size, as Discord will not accept images over this size as webhook avatars.",
+		execute: function (msg, args, cfg) {
+			let out = "";
+			args = bot.resolvers.getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
+			if (!args[0]) 
+				return bot.commands.help.execute(msg, ["avatar"], cfg);
 
-modules.exports = {
-	help: cfg => "View or change a " + cfg.lang + "'s avatar",
-	usage: cfg => ["avatar <name> [url] - if url is specified, change the " + cfg.lang + "'s avatar, if not, simply echo the current one"],
-	permitted: () => true,
-	desc: cfg => "The specified URL must be a direct link to an image - that is, the URL should end in .jpg or .png or another common image filetype. Also, it can't be over 1mb in size, as Discord doesn't accept images over this size as webhook avatars.",
-	execute: function (msg, args, cfg) {
-		let out = "";
-		args = getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
-		if (!args[0]) {
-			return bot.cmds.help.execute(msg, ["avatar"], cfg);
-		} else if (!tulpae[msg.author.id] || !tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase())) {
-			out = "You don't have a " + cfg.lang + " with that name registered.";
-		} else if (!args[1]) {
-			out = tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).url;
-		} else if (!validUrl.isWebUri(args[1])) {
-			out = "Malformed url.";
-		} else if (args[1].indexOf("imgur.com/a/") != -1) {
-			return send(msg.channel, "That is an Imgur album link.  You need to give me the direct URL of the image in that album that you want used");
-		} else {
+			let tulpa = bot.tulpae.getTulpa(msg, args[0]);
 
-			request(args[1], { method: "HEAD" }, (err, res) => {
-				if (err || !res.headers["content-type"] || !res.headers["content-type"].startsWith("image")) return send(msg.channel, "I couldn't find an image at that URL. Make sure it's a direct link (ends in .jpg or .png for example).");
-				if (Number(res.headers["content-length"]) > 1000000) {
-					return send(msg.channel, "That image is too large and Discord will not accept it. Please use an image under 1mb.");
+			if (!tulpa) {
+				out = `You don't have ${cfg.singularArticle} ${cfg.singular} matching that name registered.`;
+			} else if (!args[1]) {
+				out = tulpa.url;
+			} else {
+				try {
+					let url = bot.resolvers.resolveImage(msg);
+					tulpa.url = url;
+					bot.configuration.markDirty("users");
+					out = `${tulpa.name}'s avatar has been changed successfully.`;
+				} catch (e) {
+					out = e;
 				}
-				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).url = args[1];
-				save("tulpae", tulpae);
-				send(msg.channel, "Avatar changed successfully.");
-			});
-			return;
+			}
+			bot.messaging.send(msg.channel, out);
 		}
-		send(msg.channel, out);
-	}
+	};
 }

@@ -1,79 +1,58 @@
-const { article, proper } = require("../components/grammar");
+module.exports = function (bot) {
+	return {
+		help: cfg => `View or change ${cfg.singularArticle} ${cfg.singular}'s brackets`,
+		usage: cfg => [`brackets <name> [#] [brackets] - if brackets are given, change the ${cfg.singular}'s brackets, if not, simply echo their current set.`
+					   `brackets <name> <#> none - Remove the given brackets, if this is not the last remaining set of brackets.`],
+		desc: cfg => "Brackets must be the word 'text' surrounded by any symbols or letters (spaces are allowed), i.e. `[text]` or ` >> text`.",
+		permitted: () => true,
+		execute: function (msg, args, cfg) {
+			let out = "";
+			args = bot.resolvers.getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
 
-modules.exports = {
-	help: cfg => "View or change a " + cfg.lang + "'s brackets",
-	usage: cfg => ["brackets[alternate [#]] <name> [brackets] - if brackets are given, change the " + cfg.lang + "'s brackets, if not, simply echo the current one.  Can also specify alternate brackets, starting from 1.  Omit # to default to alternate 1"],
-	desc: cfg => "Brackets must be the word 'text' surrounded by any symbols or letters, i.e. `[text]` or `>>text`",
-	permitted: () => true,
-	execute: function (msg, args, cfg) {
-
-		let checkName = (idx) => tulpae[msg.author.id] && tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[idx].toLowerCase());
-
-		let out = "";
-		args = getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
-		if (!args[0]) {
-			return bot.cmds.help.execute(msg, ["brackets"], cfg);
-		} else if (args[0].toLowerCase() == "alternate" && (checkName(1) || (!isNaN(args[1]) && checkName(2)))) { // If we're prefixing 'alternate', and can find a valid name later down the line...
-			const reducer = (a, c) => a + ", " + c;
-
-			let nameIndex = checkName(1) ? 1 : 2;
-			let tupper = checkName(nameIndex);
-
-			let alternate = nameIndex == 2 ? Math.floor(Number(args[1])) : 1;
-
-			if (alternate < 1) {
-				out = "Cannot address this alternate";
-			} else if (alternate > 4) {
-				out = "YOu are limited to 4 alternates at this time";
+			if (!args[0]) {
+				return bot.commands.help.execute(msg, ["brackets"], cfg);
 			} else {
-				let brackets = args.slice(nameIndex + 1).join(" ").split("text");
+				let user = bot.tulpae.getUser(msg);
+				let tulpa = bot.tulpae.getTulpae(user, args[0]);
 
-				if (brackets.length == 1 && brackets[0] == "") {
-					tupper.alternates = tupper.alternates || Array();
-
-					if (tupper.alternates.length >= alternate) {
-						out = `Alternate brackets for ${tupper.name}: ${tupper.alternates[alternate - 1][0]}text${tupper.alternates[alternate - 1][1]}`;
-					} else {
-						out = "Unable to display alternate; does not exist";
-					}
-				} else if (brackets.length == 1 && brackets[0] == "remove") {
-					tupper.alternates = tupper.alternates || Array();
-
-					if (tupper.alternates.length >= alternate) {
-						out = `Removing alternate bracket set ${alternate}`;
-						tupper.alternates.splice(alternate - 1, 1);
-						save("tulpae", tulpae);
-					} else {
-						out = "Unable to remove alternate; does not exist";
-					}
-				} else if (brackets.length < 2) {
-					out = "No 'text' found to detect brackets with. For the last part of your command, enter the word 'text' surrounded by any characters (except `''`).\nThis determines how the bot detects if it should replace a message.";
-				} else if (!brackets[0] && !brackets[1]) {
-					out = "Need something surrounding 'text'.";
+				if (!tulpa) {
+					out = `You don't have ${cfg.singularArticle} ${cfg.singular} with that name registered.`;
+				} else if (!args[1]) {
+					let count = 0;
+					out = [`Brackets for ${tulpa.name}:`].concat(tulpa.brackets).reduce((a, c) => a + `\n${++count}: ${c[0]}text${c[1]}`);
 				} else {
-					tupper.alternates = tupper.alternates || Array();
-					tupper.alternates[alternate - 1] = brackets;
-					save("tulpae", tulpae);
-					out = "Alternate brackets updated successfully.";
+
+					let Skip = !isNaN(args[1])
+					let num = Skip ? parseInt(args[1]) - 1 : 0;
+					args = args.slice(0, Skip ? 2 : 1);
+
+					if (args[0].toLowerCase() == "none" && !args[1]) {
+						if (tulpa.brackets.length < 2) {
+							out = "Cannot remove the last set of brackets";
+						} else if (num < tulpa.brackets.length && num >= 0) {
+							tulpa.brackets.slice(num);
+							bot.configuration.markDirty("users");
+							out = "Brackets removed";
+						} else {
+							out = "Unable to remove that bracket set";
+						}
+					} else if (num < 0 || num >= bot.config.maxBrackets) {
+						out = `Bracket limit is ${bot.config.maxBrackets} brackets.`;
+					} else if (!args[0]) {
+						let brackets = tulpa.brackets[num];
+						out = `Brackets for ${tulpa.name}: ${brackets[0]}text${brackets[1]}`;
+					} else {
+						try {
+							tulpa.brackets[num] = bot.tulpae.validateBrackets(user, bot.tulpae.parseBrackets(args.slice(1)));
+							bot.configuration.markDirty("users");
+							out = "Brackets updated successfully";
+						} catch (e) {
+							out = e;
+						}
+					}
 				}
 			}
-		} else if (!tulpae[msg.author.id] || !tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase())) {
-			out = "You don't have a " + cfg.lang + " with that name registered.";
-		} else if (!args[1]) {
-			let brackets = tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).brackets;
-			out = `Brackets for ${args[0]}: ${brackets[0]}text${brackets[1]}`;
-		} else {
-			let brackets = args.slice(1).join(" ").split("text");
-			if (brackets.length < 2) {
-				out = "No 'text' found to detect brackets with. For the last part of your command, enter the word 'text' surrounded by any characters (except `''`).\nThis determines how the bot detects if it should replace a message.";
-			} else if (!brackets[0] && !brackets[1]) {
-				out = "Need something surrounding 'text'.";
-			} else {
-				tulpae[msg.author.id].find(t => t.name.toLowerCase() == args[0].toLowerCase()).brackets = brackets;
-				save("tulpae", tulpae);
-				out = "Brackets updated successfully.";
-			}
+			bot.messaging.send(msg.channel, out);
 		}
-		send(msg.channel, out);
-	}
+	};
 }

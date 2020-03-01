@@ -1,7 +1,7 @@
 module.exports = function (bot) {
 
-    function logMessage(msg, content, guild) {
-        guild = msg.channel.guild;
+    function logMessage(msg, content, tulpa, guild) {
+        guild = guild || msg.channel.guild;
         var cfg = bot.configuration.getServerConfig(guild);
 
         if (cfg.log && guild.channels.has(cfg.log)) {

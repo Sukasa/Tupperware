@@ -2,6 +2,8 @@ const priorities = require("../component/priorities");
 
 module.exports = {
 	priority: priorities.HIGHEST,
+	private: true,
+
 	test: function (msg, bot) {
 		let cfg = msg.channel.guild && bot.config[msg.channel.guild.id];
 		return msg.content.toLowerCase().startsWith(cfg.prefix) && (!cfg.cmdblacklist || !cfg.cmdblacklist.includes(msg.channel.id));

@@ -27,9 +27,23 @@ module.exports = function (bot) {
 		return recent && recent[msg.chann.id] && recent[msg.channel.id].find(r => r.userID == userID && msg.id == r.id);
 	}
 
+	function isUsernameCollision(msg, username) {
+		return recent && recent[msg.channel.id] && recent[msg.channel.id][0].userID != msg.author.id && recent[msg.channel.id][0].data.username == username;
+	}
+
+	function getRecent(channel) {
+		channel = channel.channel || channel;
+		channel = channel.id || channel;
+		recent[channel] = recent[channel] || [];
+
+		return recent[channel][0];
+	}
+
 	return {
 		send: send,
 		addRecent: addRecent,
-		isRecent: isRecent
+		isRecent: isRecent,
+		getRecent: getRecent,
+		isUsernameCollision: isUsernameCollision
 	};
 }

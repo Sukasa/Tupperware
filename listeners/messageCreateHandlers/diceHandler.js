@@ -7,7 +7,7 @@ function reduceDice(state, dice) {
 	if (dice.valid) {
 		state.content = `${state.content}${state.sep}${dice.value}`;
 		state.sum += dice.value;
-	} else 
+	} else
 		state.content = `${state.content}${state.sep}||${dice.value}||`;
 	state.sep = ", ";
 	return state;
@@ -83,42 +83,44 @@ function handleDiceRoll(rollMatch) {
 }
 
 
-module.exports = {
-	priority: priorities.MEDIUM,
+module.exports = function (bot) {
 
-	test: function(msg, bot)  {
-		let cfg = msg.channel.guild && bot.config[msg.channel.guild.id] || { prefix: "t!", rolesEnabled: false, lang: "tulpa" };
-		return (diceRegex.test(msg.content) && (!cfg.diceblacklist || !cfg.diceblacklist.includes(msg.channel.id)));
-	},
+	return {
+		priority: priorities.MEDIUM,
 
-	execute: async (msg, bot) => {
-		diceRegex.lastIndex = 0;
-		var resultSets = [];
-		var match;
+		test: function (msg, bot) {
+			let cfg = msg.channel.guild && bot.config[msg.channel.guild.id] || { prefix: "t!", rolesEnabled: false, lang: "tulpa" };
+			return (diceRegex.test(msg.content) && (!cfg.diceblacklist || !cfg.diceblacklist.includes(msg.channel.id)));
+		},
 
-		while (match = diceRegex.exec(msg.content))
-			resultSets.push(handleDiceRoll(match));
+		execute: async (msg, bot) => {
+			diceRegex.lastIndex = 0;
+			var resultSets = [];
+			var match;
 
-		const hook = await bot.fetchWebhook(msg.channel)
-		const data = {
-			wait: true,
-			content: resultSets.join("\n"),
-			username: `Dice Roll${resultSets.length > 1 ? "s" : ""}`,
-			avatarURL: "https://greenfirework.com/dicerollflat.png",
-		};
+			while (match = diceRegex.exec(msg.content))
+				resultSets.push(handleDiceRoll(match));
 
-		try {
-			await bot.executeWebhook(hook.id, hook.token, data);
-		} catch (e) {
-			console.log(e);
-			if (e.code === 10015) {
-				delete webhooks[msg.channel.id];
-				const hook = await bot.fetchWebhook(msg.channel);
-				return bot.executeWebhook(hook.id, hook.token, data);
+			const hook = await bot.fetchWebhook(msg.channel)
+			const data = {
+				wait: true,
+				content: resultSets.join("\n"),
+				username: `Dice Roll${resultSets.length > 1 ? "s" : ""}`,
+				avatarURL: "https://greenfirework.com/dicerollflat.png",
+			};
+
+			try {
+				await bot.executeWebhook(hook.id, hook.token, data);
+			} catch (e) {
+				console.log(e);
+				if (e.code === 10015) {
+					delete webhooks[msg.channel.id];
+					const hook = await bot.fetchWebhook(msg.channel);
+					return bot.executeWebhook(hook.id, hook.token, data);
+				}
 			}
+
+			return;
 		}
-
-		return;
-	}
-
-}
+	};
+}]

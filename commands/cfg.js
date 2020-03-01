@@ -1,11 +1,11 @@
-const { article, proper } = require("../components/grammar");
+const { article, proper } = require("../components/language");
 
-modules.exports = {
+// TODO should I convert !cfg into something that further uses submodules?
+module.exports = {
 	help: cfg => "Configure server-specific settings",
 	usage: cfg => ["cfg prefix <newPrefix> - Change the bot's prefix",
-		"cfg roles <enable|disable> - Enable or disable automatically managed mentionable " + cfg.lang + " roles, so that users can mention " + cfg.lang + "s",
 		"cfg rename <newname> - Change all instances of the default name 'tulpa' in bot replies in this server to the specified term",
-		"cfg log <channel> - Enable the bot to send a log of all " + cfg.lang + " messages and some basic info like who registered them. Useful for having a searchable channel and for distinguishing between similar names.",
+		"cfg log <channel> - Enable the bot to send a log of all " + cfg.singular + " messages and some basic info like who registered them. Useful for having a searchable channel and for distinguishing between similar names.",
 		"cfg blacklist <add|remove> <channel(s)> - Add or remove channels to the bot's proxy blacklist - users will be unable to proxy in blacklisted channels.",
 		"cfg cmdblacklist <add|remove> <channel(s)> - Add or remove channels to the bot's command blacklist - users will be unable to issue commands in blacklisted channels."],
 
@@ -14,8 +14,8 @@ modules.exports = {
 		let out = "";
 		if (msg.channel instanceof Eris.PrivateChannel) {
 			out = "This command cannot be used in private messages.";
-		} else if (!args[0] || !["prefix", "roles", "rename", "log", "blacklist", "cmdblacklist"].includes(args[0])) {
-			return bot.cmds.help.execute(msg, ["cfg"], cfg);
+		} else if (!args[0] || !["prefix", "rename", "log", "blacklist", "cmdblacklist"].includes(args[0])) {
+			return bot.commands.help.execute(msg, ["cfg"], cfg);
 		} else if (args[0] == "prefix") {
 			if (!args[1]) {
 				out = "Missing argument 'prefix'.";
@@ -26,61 +26,12 @@ modules.exports = {
 				updateStatus();
 				save("servercfg", config);
 			}
-		} else if (args[0] == "roles") {
-			if (!msg.channel.guild.members.get(bot.user.id).permission.has("manageRoles")) {
-				out = "I don't have permission to manage roles.";
-			} else if (args[1] === "enable") {
-				let guild = msg.channel.guild;
-				if (cfg.rolesEnabled)
-					out = proper(cfg.lang) + " roles already enabled on this server.";
-				else {
-					cfg.rolesEnabled = true;
-					Promise.all(Object.keys(tulpae).filter(t => guild.members.has(t)).map(t => {
-						let mem = guild.members.get(t);
-						return Promise.all(tulpae[t].map(tul => {
-							if (!mem.roles.find(r => guild.roles.get(r).name === tul.name))
-								return guild.createRole({ name: tul.name, mentionable: true }).then(r => {
-									mem.addRole(r.id);
-									if (!tul.roles) tul.roles = {};
-									tul.roles[guild.id] = r.id;
-								});
-							return true;
-						}));
-					})).then(() => {
-						save("tulpae", tulpae);
-					});
-					save("servercfg", config);
-					out = proper(cfg.lang) + " roles enabled. Adding the roles may take some time.";
-				}
-			} else if (args[1] === "disable") {
-				let guild = msg.channel.guild;
-				if (!cfg.rolesEnabled)
-					out = proper(cfg.lang) + " roles already disabled on this server.";
-				else {
-					cfg.rolesEnabled = false;
-					Object.keys(tulpae).filter(t => guild.members.has(t)).forEach(t => {
-						let mem = guild.members.get(t);
-						tulpae[t].forEach(tul => {
-							if (tul.roles && tul.roles[guild.id]) {
-								guild.deleteRole(tul.roles[guild.id]);
-								delete tul.roles[guild.id];
-								if (!Object.keys(tul.roles)[0]) delete tul.roles;
-							}
-						});
-					});
-					save("tulpae", tulpae);
-					save("servercfg", config);
-					out = proper(cfg.lang) + " roles disabled. Deleting the roles may take some time.";
-				}
-			} else {
-				out = "Missing argument 'enable|disable'.";
-			}
 		} else if (args[0] == "rename") {
 			if (!args[1]) {
 				out = "Missing argument 'newname'";
 			} else {
-				cfg.lang = args.slice(1).join(" ");
-				out = "Entity name changed to " + cfg.lang;
+				cfg.singular = args.slice(1).join(" ");
+				out = "Entity name changed to " + cfg.singular;
 				save("servercfg", config);
 			}
 		} else if (args[0] == "log") {
