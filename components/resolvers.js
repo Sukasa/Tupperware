@@ -4,7 +4,7 @@ const probe = require("probe-image-size");
 
 module.exports = function (bot) {
 	function resolveCompareText(a, b) {
-		return a.toLowerCase().indexOf(b.toLowerCase()) > -1;
+		return a && b && a.toLowerCase().indexOf(b.toLowerCase()) > -1;
 	}
 
 	function resolveKey(haystack, needle) {
@@ -19,7 +19,7 @@ module.exports = function (bot) {
 	}
 
 	function resolveUser(msg, text) {
-		let target = msg.channel.guild.members[text] || msg.channel.guild.members.find(m => m.username.toLowerCase() == text.toLowerCase() || (m.nick && m.nick.toLowerCase()) == text.toLowerCase() || text.toLowerCase() == `${m.username.toLowerCase()}#${m.discriminator}`);
+		let target = msg.channel.guild.members[text] || msg.channel.guild.members.find(m => m.id == text || m.username.toLowerCase() == text.toLowerCase() || (m.nick && m.nick.toLowerCase()) == text.toLowerCase() || text.toLowerCase() == `${m.username.toLowerCase()}#${m.discriminator}`);
 		if (target && target.user) target = target.user;
 		return target;
 	};
@@ -44,32 +44,34 @@ module.exports = function (bot) {
 		if (msg.attachments[0]) {
 			url = msg.attachments[0].url;
 		} else {
-			let idx = parts.findIndex(x => x.toLowerCase().indexOf("http"));
-			url = parts.slice(0, idx).join(" ");
+
+			let idx = parts.findIndex(x => x.toLowerCase().indexOf("http") > -1);
+			url = parts.slice(idx).join(" ");
 		}
 
-		if (!validUrl.isWebUri(url)) {
-			throw "That is not a valid URI.";
-		} else if (url.indexOf("imgur.com/a/") != -1) {
+		if (!validUrl.isWebUri(url)) 
+			throw "That is not a valid URI.";		
+
+		if (url.indexOf("imgur.com/a/") != -1) 
 			throw "That is an Imgur album link.  Please use the direct URL of the image in that album that you want used";
 			// TODO use the imgur API to convert albumn link to image link?  Or scrape?
-		}
-
+		
 		let head;
 		try {
 			head = await request(url, { method: "HEAD" });
 		} catch (e) {
 			throw "I was unable to access that URL. Please try another.";
 		}
-		if (Number(head.headers["content-length"]) > 1048575) {
-			return "That image is too large and Discord will not accept it. Please use an image under 1 MByte.";
-		}
+		if (Number(head.headers["content-length"]) > 1048575)
+			throw "That image is too large and Discord will not accept it. Please use an image under 1 MByte.";
+		
 		let res;
 		try {
 			res = await probe(url);
 		} catch (e) {
 			throw "There was a problem checking that image. Please try another.";
 		}
+
 		if (Math.max(res.width, res.height) >= bot.config.maxImageDimension)
 			throw "That image is too large and Discord will not accept it. Please use an image where width and height are less than 1024 pixels.";
 

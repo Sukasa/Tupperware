@@ -3,17 +3,15 @@
   "bio": {
     "fullName": null,
     "pronouns": null,
-    "tag": null,
-    "desc": null,
     "species": null,
     "apparentAge": null
   },
   "url": "https://i.imgur.com/ZpijZpg.png",
-  "brackets": null,
+  "brackets": [],
   "posts": 0,
   "host": null,
   "birthday": null,
-  "alternates": [],
-  "forms": null,
-  "currentForm": null
+  "tag": null,
+  "desc": "",
+  "forms": {}
 }

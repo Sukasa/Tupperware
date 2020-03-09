@@ -6,31 +6,27 @@ module.exports = function (bot) {
 		permitted: () => true,
 		execute: function (msg, args, cfg) {
 			let proper = bot.language.proper;
-			args = bot.resolvers.getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
+			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
 			let out = "";
 
 			if (!args[0])
 				return bot.commands.help.execute(msg, ["register"], cfg);
 
+			if (!args[1])
+				throw "Missing argument 'brackets'. Try `" + cfg.prefix + "help register` for usage details.";
 
-			if (!args[1]) {
-				out = "Missing argument 'brackets'. Try `" + cfg.prefix + "help register` for usage details.";
-			} else if (args[0].length < 2 || args[0].length > 28) {
-				out = "Name must be between 2 and 28 characters.";
-			} else {
+			if (args[0].length < 2 || args[0].length > 28)
+				throw "Name must be between 2 and 28 characters.";
 
-				try {
-					let brackets = bot.tulpae.parseBrackets(args.slice(1));
-					let user = bot.tulpae.getUser(msg);
-					if (bot.tulpae.getTulpa(user, args[0])) 
-						throw proper(cfg.singularArticle) + cfg.singular + " with that name under your user account already exists.";
-					bot.tulpae.register(user, args[0], brackets);
-					out = proper(cfg.singular) + " registered successfully!\nName: " + tulpa.name + "\nBrackets: " + `${brackets[0]}text${brackets[1]}` + "\nUse `" + cfg.prefix + "rename`, `" + cfg.prefix + "brackets`, `" + cfg.prefix + "avatar`, and `" + cfg.prefix + "form` to set/update your " + cfg.singular + "'s info.";
-				} catch (e) {
-					out = e;
-				}
-			}
-			bot.messaging.send(msg.channel, out);
+			let user = bot.tulpae.getUser(msg);
+			if (bot.tulpae.getTulpa(user, args[0]))
+				throw `${proper(cfg.singularArticle)} ${cfg.singular} with that name under your user account already exists.`;
+
+			let brackets = bot.tulpae.parseBrackets(args.slice(1));
+			let tulpa = bot.tulpae.register(user, args[0], brackets);
+			out = proper(cfg.singular) + " registered successfully!\nName: " + tulpa.name + "\nBrackets: " + `${brackets[0]}text${brackets[1]}` + "\nUse `" + cfg.prefix + "rename`, `" + cfg.prefix + "brackets`, `" + cfg.prefix + "avatar`, and `" + cfg.prefix + "form` to set/update your " + cfg.singular + "'s info.";
+
+			return out;
 		}
 	};
 }

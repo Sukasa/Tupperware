@@ -1,20 +1,35 @@
+const fs = require("fs");
+const Eris = require("eris");
+
 module.exports = function (bot) {
 	messageHandlers = [];
 
 	// Load message handlers
-	fs.readdirSync("./messageCreateHandlers").forEach(file => messageHandlers.push(require("./messageCreateHandlers/" + file)(bot)));
-	messageHandlers.sort((a, b) => { a.priority - b.priority });
+	fs.readdirSync("./listeners/messageCreateHandlers").forEach(file => {
+		console.log(`- Loading message handlers ${file}`);
+		messageHandlers.push(require("./messageCreateHandlers/" + file)(bot))
+	});
+	messageHandlers.sort((b, a) => { a.priority - b.priority });
 
-	async function OnMessage(msg, bot) {
+	async function OnMessage(msg) {
 		let public = (msg.channel instanceof Eris.TextChannel);
+		let cfg;
+
+		if (msg.author.id == bot.id)
+			return;
+
+		if (public)
+			cfg = bot.configuration.getServerConfig(msg)
+
 		// TODO loop through message handlers, the first one that returns "yes I can handle this" is executed
-		messageHandlers.forEach(handler => {
+		for (let i in messageHandlers) {
 			let state = null;
-			if ((public || handler.private) && (state = handler.test(msg, bot))) {
-				handler.execute(msg, bot, state);
-				return;
+			let handler = messageHandlers[i];
+			if (((public && !(handler.blacklist && handler.blacklist(cfg) && handler.blacklist(cfg).includes(msg.channel.id))) || (!public && handler.private)) && (state = handler.test(msg))) {
+				handler.execute(msg, state);
+				break;
 			}
-		});
+		}
 	};
 
 	return {

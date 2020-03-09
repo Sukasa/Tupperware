@@ -6,59 +6,66 @@ module.exports = function (bot) {
 
 	function getServerConfig(guild) {
 		if (!guild)
-			throw "getServerConfig() with NULL guild"
-		guild = guild.channel || guild;
-		guilg = guild.guild || guild;
-		guild = guild.id || guild;
-		if (bot.serverConfig[guild])
-			return bot.serverConfig[guild];
+			throw "Apparently someone forgot to check if this was an Eris.PrivateChannel before calling getServerConfig()"
 
-		bot.serverConfig[guild] = JSON.parse(JSON.stringify(bot.defaultServerConfig)); // Deep copy
-		markDirty("serverConfig");
-		return bot.serverConfig[guild];
-    };
+		if (!bot)
+			throw "I'm a little busy having a personality crisis, I'll be back later";
+
+		if (!bot.servers)
+			throw "I appear to have alzheimers; I lost my server store";
+
+		guild = guild.channel || guild;
+		guild = guild.guild || guild;
+		guild = guild.id || guild;
+
+		if (bot.servers[guild])
+			return bot.servers[guild];
+
+		bot.servers[guild] = JSON.parse(JSON.stringify(bot.newServer)); // Deep copy
+		markDirty("servers");
+		return bot.servers[guild];
+	};
 
 	function validateGuildCfg(guild) {
 		var config = getServerConfig(guild);
 		if (config.prefix == undefined)
-			config.prefix = "tul!";
-		if (config.rolesEnabled == undefined)
-			config.rolesEnabled = false;
+			config.prefix = bot.newServer.prefix;
 		if (config.singular == undefined)
-			config.singular = cfg.lang || "tulpa";
+			config.singular = cfg.lang || bot.newServer.singular;
 		if (config.plural == undefined)
-			config.plural = "tulpae";
+			config.plural = bot.newServer.plural;
 		if (config.log == undefined)
 			config.log = null;
 		config.singularArticle = bot.language.article(config.singular);
 
-		save("config", bot.serverConfig);
+		markDirty("servers");
 	}
+	const path = require('path').dirname(require.main.filename);
 
 	function save(filename, configFile) {
-		return fs.writeFile(`${__dirname}/config/${filename}.json`, JSON.stringify(configFile, null, 2), console.error);
+		console.log(`saving ${filename} to ${path}/config/${filename}`);
+		dirty[filename] = false;
+		return fs.writeFile(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { console.log(`Saved ${filename}`); });
 	};
 
 	function doSaves() {
-		var file;
-		while (file = dirty.shift()) {
-			save(file, bot[file]);
-		}
+		for (var file in dirty)
+			if (dirty[file])
+				save(file, bot[file]);
 	}
 
 	function markDirty(file) {
-		if (!dirty.includes(file))
-			dirty.unshift(file);
+		dirty[file] = true;
 		if (bot.config.noDeferredSave)
 			doSaves();
 	}
 
-    return {
+	return {
 		getServerConfig: getServerConfig,
 		validateGuildCfg: validateGuildCfg,
 		save: save,
 		doSaves: doSaves,
 		markDirty: markDirty
-    };
+	};
 
 }

@@ -11,12 +11,12 @@ module.exports = function (bot) {
 		}
 	};
 
-	function addRecent(userMsg, botMsg) {
+	function addRecent(userMsg, botMsg, data) {
 		recent[userMsg.channel.id] = recent[userMsg.channel.id] || [];
 		recent[userMsg.channel.id].unshift({
 			userID: userMsg.author.id,
-			name: data.username,
-			tulpa: tulpa,
+			name: data ? data.username : tulpa.name,
+			tulpa: data.tulpa,
 			id: botMsg.id,
 			tag: `${userMsg.author.username}#${userMsg.author.discriminator}`
 		});

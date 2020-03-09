@@ -17,7 +17,7 @@ module.exports = function (bot) {
 		return false;
 	}
 
-	function test(msg, bot) {
+	function test(msg) {
 		let clean = msg.cleanContent || msg.content;
 		if (aniRegex.test(clean))
 			return false;
@@ -32,7 +32,7 @@ module.exports = function (bot) {
 		// First, attempt matching line-by-line to see if someone has put multiple tulpa's responses in one message
 		for (var i = 0; i < cleanLines.length; i++) {
 			var line = cleanLines[i];
-			user.tulpae.forEach(tulpa => {
+			Object.values(user.tulpae).forEach(tulpa => {
 				if (bracketSet = checkTulpa(msg, tulpa, line)) {
 					replace.push([msg, cfg, tulpa, lines[i].substring(bracketSet[0].length, lines[i].length - bracketSet[1].length)]);
 				}
@@ -44,18 +44,20 @@ module.exports = function (bot) {
 
 		// First, check the message as a whole
 		if (!replace[0]) {
-			user.tulpae.forEach(tulpa => {
+			Object.values(user.tulpae).find(tulpa => {
 				if (bracketSet = checkTulpa(msg, tulpa, clean)) {
 					replace.push([msg, cfg, tulpa, msg.content.substring(bracketSet[0].length, msg.content.length - bracketSet[1].length)]);
-					break;
+					return true;
 				}
 			});
 		}
 
 		// If we still had no tulpa match, then see if the user has a default tulpa set for the server
 		if (!replace[0]) {
-			if (user.defaults[msg.channel.guild.id]) {
-				replace.push([msg, cfg, user.defaults[msg.channel.guild.id], msg.content]);
+			if (user.serverDefaults[msg.channel.guild.id]) {
+				let tulpa = bot.tulpae.getTulpa(user, user.serverDefaults[msg.channel.guild.id])
+				if (tulpa) // Sanity check
+					replace.push([msg, cfg, tulpa, msg.content]);
 			}
 		}
 
@@ -68,7 +70,7 @@ module.exports = function (bot) {
 	}
 
 	async function createTulpaMessage(msg, cfg, tulpa, content) {
-		const hook = await bot.serverWebhooks.fetchWebhook(msg.channel);
+		const hook = await bot.webhooks.fetchWebhook(msg.channel);
 		const data = {
 			wait: true,
 			content: content,
@@ -99,7 +101,7 @@ module.exports = function (bot) {
 			if (e.code === 10015) {
 				delete bot.serverWebhooks[msg.channel.id];
 				const hook = await bot.webhooks.fetchWebhook(msg.channel);
-				return bot.executeWebhook(hook.id, hook.token, data);
+				bot.executeWebhook(hook.id, hook.token, data);
 			}
 		}
 
@@ -107,22 +109,23 @@ module.exports = function (bot) {
 		bot.logging.logMessage(msg, content, tulpa);
 
 		// Now handle recent updating
-		bot.messaging.addRecent(msg, webmsg);
+		bot.messaging.addRecent(msg, webmsg, data);
 	}
 
-	async function execute(msg, bot, state) {
+	async function execute(msg, state) {
 		Promise.all(state.map(r => createTulpaMessage(...r)))
 			.then(() => {
 				if (msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
 					msg.delete().catch(e => { if (e.code == 50013) { bot.messaging.send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); } });
-				bot.configuration.markDirty("users");
-			}).catch(e => bot.messaging.send(msg.channel, e));
+				bot.configuration.markDirty("hosts");
+			}).catch(e => { console.log(e); bot.messaging.send(msg.channel, e); });
 	}
 
 	return {
 		priority: priorities.LOWEST,
 		inDMs: false,
 		test: test,
-		execute: execute
+		execute: execute,
+		blacklist: (cfg) => cfg.blacklist
 	};
 }

@@ -1,13 +1,15 @@
 {
   "prefix": "t!",
-  "rolesEnabled": false,
   "singular": "tulpa",
   "plural": "tulpae",
   "singularArticle": "a",
   "log": null,
   "advisoryConfigured": false,
   "advisory": null,
+  "dice": false,
+  "diceCfg": null,
   "coexistenceMode": true,
   "cmdblacklist": [],
+  "diceblacklist": [],
   "blacklist": []
 }

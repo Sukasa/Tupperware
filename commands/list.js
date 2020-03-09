@@ -16,42 +16,41 @@ module.exports = function (bot) {
 			if (target && !target.tulpae)
 				target = bot.tulpae.getUser(target);
 
-			if (!target) {
-				out = "User not found.";
-			} else {
+			if (!target)
+				throw "User not found.";
 
-				if (!user.tulpae || !user.tulpae.length) {
-					out = (target.id == msg.author.id) ? "You have not registered any " + cfg.plural + "." : "That user has not registered any " + cfg.plural + ".";
-				} else {
-					out = {
-						embed: {
-							title: `${target.username}#${target.discriminator}'s registered ${cfg.plural}`,
-							author: {
-								name: target.username,
-								icon_url: target.avatarURL
-							},
-							fields: []
-						}
-					};
-					let len = 200;
-					let page = 1;
-					user.tulpae.forEach(t => {
-						let field = bot.rendering.generateTulpaField(t);
-						len += field.name.length;
-						len += field.value.length;
-						if (len < 5000) {
-							out.embed.fields.push(field);
-						} else {
-							out.embed.title += ` (page ${page})`;
-							send(msg.channel, out);
-							len = 200;
-							page++;
-							out.embed.title = `${target.username}#${target.discriminator}'s registered ${cfg.plural} (page ${page})`;
-							out.embed.fields = [field];
-						}
-					});
+			if (!target.tulpae || !Object.values(target.tulpae).length)
+				throw (target.id == msg.author.id) ? "You have not registered any " + cfg.plural + "." : "That user has not registered any " + cfg.plural + ".";
+
+			out = {
+				embed: {
+					title: `${target.username}#${target.discriminator}'s registered ${cfg.plural}`,
+					author: {
+						name: target.username,
+						icon_url: target.avatarURL
+					},
+					fields: []
 				}
-			}
+			};
+			let len = 200;
+			let page = 1;
+			Object.values(target.tulpae).forEach(t => {
+				let field = bot.rendering.generateTulpaField(t);
+				len += field.name.length;
+				len += field.value.length;
+				if (len < 5000) {
+					out.embed.fields.push(field);
+				} else {
+					out.embed.title += ` (page ${page})`;
+					bot.messaging.send(msg.channel, out);
+					len = 200;
+					page++;
+					out.embed.title = `${target.username}#${target.discriminator}'s registered ${cfg.plural} (page ${page})`;
+					out.embed.fields = [field];
+				}
+			});
+
+
 			bot.messaging.send(msg.channel, out);
 		}
 	};

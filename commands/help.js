@@ -47,7 +47,7 @@ module.exports = function (bot) {
 							icon_url: bot.user.avatarURL
 						},
 						footer: {
-							text: "Developed by Sukasa#1011, original bot by Keter#1730  https://github.com/Sukasa/Tupperware"
+							text: "By Sukasa#1011, original by Kartelant https://github.com/Sukasa/Tupperware"
 						}
 					}
 				};
@@ -59,4 +59,5 @@ module.exports = function (bot) {
 			bot.messaging.send(message.channel, output);
 		}
 
-	}
+	};
+}

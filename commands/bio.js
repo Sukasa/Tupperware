@@ -1,12 +1,13 @@
 module.exports = function (bot) {
 	return {
-		help: cfg => `View or set biographical information about a ${cfg.singular}`,
+		help: cfg => `View or set biographical information about ${cfg.singularArticle} ${cfg.singular}`,
 		usage: cfg => [`bio <keys> - List the available biographical keys`,
-			`bio <name> <key> [value] - Set or view biographical data for a ${cfg.singular}`],
+			`bio <name> <key> [value] - Set or view biographical data for ${cfg.singularArticle} ${cfg.singular}`,
+			`bio <name> <key> <clear> - Remove biographical data for ${cfg.singularArticle} ${cfg.singular}`],
 		permitted: () => true,
 		execute: function (msg, args, cfg) {
 			let out = "";
-			args = bot.resolvers.getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
+			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
 
 			if (!args[0])
 				return bot.commands.help.execute(msg, ["bio"], cfg);
@@ -17,26 +18,31 @@ module.exports = function (bot) {
 				let tulpa = bot.tulpae.getTulpa(msg, args[0]);
 				let key = bot.resolvers.resolveKey(bot.newTulpa.bio, args[1]);
 
-				if (!tulpa) {
-					out = `You don't have ${cfg.singularArticle} ${cfg.singular} matching that name registered.`;
-				} else if (!key) {
-					out = "Unknown key " + args[1];
-				} else if (args.length > 2) {
+				if (!tulpa)
+					throw `You don't have ${cfg.singularArticle} ${cfg.singular} matching that name registered.`;
+
+				if (!key)
+					throw `Unknown key \`${args[1]}\``;
+
+				if (args.length > 2) {
 					let value = args.slice(2).join(" ");
 
-					if (value.length > bot.config.maxBioLength) {
-						out = `Biographical data cannot be more than ${bot.config.maxBioLength} characters long`;
-					} else {
-						tulpa.bio[key] = value;
-						bot.configuration.markDirty("users");
-						out = "Biographical data updated";
-					}
+					if (value.length > bot.config.maxBioLength)
+						throw `Biographical data cannot be more than ${bot.config.maxBioLength} characters long`;
+
+					if (value.toLowerCase() == "clear")
+						value = null;
+
+					tulpa.bio[key] = value;
+					bot.configuration.markDirty("hosts");
+					out = "Biographical data updated";
+
 				} else {
 					out = `${tulpa.name}'s ${bot.language.parseCamelCase(key)}: ${tulpa.bio[key] || "Not set"}`;
 				}
 			}
 
-			bot.messaging.send(msg.channel, out);
+			return out;
 		}
 	};
 }

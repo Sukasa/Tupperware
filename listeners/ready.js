@@ -7,7 +7,7 @@ module.exports = function(bot) {
 		setInterval(() => bot.configuration.doSaves(), 60000);
 		setInterval(() => { bot.disconnects = Math.max(bot.disconnects - 1, 0) }, 43200000);
 
-		bot.guilds.forEach(validateGuildCfg);
+		bot.guilds.forEach(bot.configuration.validateGuildCfg);
 	};
 
 	return {

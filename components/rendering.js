@@ -3,22 +3,26 @@ module.exports = function (bot) {
 	function generateTulpaField(tulpa) {
 		var data = [""];
 
-		tulpa.bio.forEach(field => {
-			if (tulpa.bio[field])
-				data.push([bot.language.parseCamelCase(field), tulpa.bio[field]]);
+		Object.keys(tulpa.bio).forEach(key => {
+			if (key && tulpa.bio[key])
+				data.push([bot.language.parseCamelCase(key), tulpa.bio[key]]);
 		});
 
-		data.push(["Brackets", [tulpa.brackets[0] + "text" + tulpa.brackets[1]].concat(tulpa.alternates || []).reduce((a, c) => a + ", " + (c[0] + "text" + c[1]))]);
+		data.push(["Brackets", tulpa.brackets.map(c => `${c[0]}text${c[1]}`).join(", ")]);
 		data.push(["Avatar URL", tulpa.url]);
 
-		if (tulpa.forms)
-			data.push(["Forms", Object.keys(tulpa.forms).reduce((a, c) => a + ", " + (tulpa.url == tulpa.forms[c] ? `**${c}**` : `${c}`))]);
+		if (tulpa.birthday) {
+			data.push(["Birthday", new Date(tulpa.birthday).toDateString()]);
+		}
+
+		if (tulpa.forms && tulpa.forms.length > 1)
+			data.push(["Forms", Object.keys(tulpa.forms).map(form => tulpa.url == tulpa.forms[form] ? `**${form}**` : form).join(", ")]);
 
 		data.push(["Messages Sent", tulpa.posts]);
 
 		return {
 			name: tulpa.fullName || tulpa.name,
-			value: ([""].concat(data).reduce((a, c) => a + `${c[0]}: ${c[1]}\n`) + tulpa.desc)
+			value: (data.reduce((a, c) => a + `${c[0]}: ${c[1]}\n`) + tulpa.desc)
 		};
 	};
 

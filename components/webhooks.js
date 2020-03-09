@@ -1,13 +1,11 @@
-const request = require("request");
+const request = require("got");
 
 module.exports = function (bot) {
-	var webhooks = bot.webhooks;
-
 	function fetchWebhook(channel) {
 		return new Promise((resolve, reject) => {
 			if (bot.serverWebhooks[channel.id])
 				resolve(bot.serverWebhooks[channel.id]);
-			else if (!channel.permissionsOf(_bot.user.id).has("manageWebhooks"))
+			else if (!channel.permissionsOf(bot.user.id).has("manageWebhooks"))
 				reject("Proxy failed: Missing 'Manage Webhooks' permission in this channel.");
 			else {
 				channel.createWebhook({ name: "Tupperhook" }).then(hook => {
@@ -19,13 +17,8 @@ module.exports = function (bot) {
 		});
 	}
 
-	function attach(url) {
-		return new Promise(function (resolve, reject) {
-			request({ url: url, encoding: null }, (err, res, data) => {
-				console.log(`${url}: ${data.length}`);
-				resolve(data);
-			});
-		});
+	async function attach(url) {
+		return (await request(url, { encoding: null })).body;
 	}
 
 	async function sendAttachmentsWebhook(msg, cfg, data) {
@@ -56,7 +49,7 @@ module.exports = function (bot) {
 					// TODO recent check
 					if (!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
 						bot.messaging.send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.singular + " webhook message will show.");
-					bot.messaging.addRecent(msg, webmsg);
+					bot.messaging.addRecent(msg, webmsg, data);
 
 					resolve();
 				}).catch(reject);

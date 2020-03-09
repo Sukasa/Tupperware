@@ -6,17 +6,19 @@ module.exports = function (bot) {
 		permitted: () => true,
 		execute: function (msg, args, cfg) {
 			let out = "";
-			args = bot.resolvers.getMatches(msg.content, /['](.*?)[']|(\S+)/gi).slice(1);
+			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
 			if (!args[0]) {
 
 				let tulps = bot.tulpae.listForMessage(msg);
 
 				if (!tulps[0])
-					return send(msg.channel, "No " + cfg.plural + " have been registered on this server.");
+					throw `No ${cfg.plural} have been registered on this server.`;
 
 				tulps = tulps.filter(t => !!t.birthday);
+
 				if (!tulps[0])
-					return send(msg.channel, "No " + cfg.plural + " on this server have birthdays set.");
+					throw `No ${cfg.plural} on this server have birthdays set.`;
+
 				let Now = new Date();
 				let TimeTo = (birthday) => {
 					let bDate = new Date(birthday);
@@ -25,28 +27,34 @@ module.exports = function (bot) {
 						bday.setFullYear(bday.getFullYear() + 1);
 					return bDate.getTime() - Now.getTime();
 				};
+
 				tulps = tulps.sort((a, b) => TimeTo(a) - TimeTo(b));
-				out = "Here are the next few upcoming " + cfg.singular + " birthdays in this server:\n" +
+				let now = new Date();
+
+				out = `Here are the next few upcoming ${cfg.singular} birthdays in this server:\n` +
 					tulps.slice(0, 5)
 						.map(t => {
 							let bday = new Date(t.birthday);
 							bday.setFullYear(now.getFullYear());
-							if (bday < now) bday.setFullYear(now.getFullYear() + 1);
-							return (bday.getTime() == now.getTime()) ? `${t.name}: Birthday today! \uD83C\uDF70` : `${t.name}: ${bday.toDateString()}`;
+							bday.setFullYear(now.getFullYear() + (bday < now));
+							return `${t.name}:` + (bday.getTime() == now.getTime()) ? `Birthday today! \uD83C\uDF70` : `${bday.toDateString()}`;
 						}).join("\n");
 			} else {
 				let tulpa = bot.tulpae.getTulpa(msg, args[0]);
-				if (!tulpa) {
-					out = "You don't have a " + cfg.singular + " with that name registered.";
-				} else if (!args[1]) {
+				if (!tulpa)
+					throw `You don't have a ${cfg.singular} with that name registered.`;
+
+				if (!args[1]) {
 					let bday = tulpa.birthday;
 					out = bday ? new Date(bday).toDateString() : "No birthday currently set for " + tulpa.name;
-				} else if (!(new Date(args[1]).getTime())) {
-					out = "I can't understand that date. Please enter in the form MM/DD/YYYY with no spaces.";
 				} else {
+
+					if (!(new Date(args[1]).getTime()))
+						throw "I can't understand that date. Please enter in the form MM/DD/YYYY with no spaces.";
+
 					let date = new Date(args[1]);
 					tulpa.birthday = date.getTime();
-					bot.configuration.markDirty("users");
+					bot.configuration.markDirty("hosts");
 					out = `${tulpa.name}'s birthday set to ${date.toDateString()}.`;
 				}
 			}
