@@ -12,8 +12,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>074f67e2-a912-4b98-836c-f7ab75017cbd</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>
-    </StartupFile>
+    <StartupFile>bot.js</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -31,8 +30,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
+    <Content Include="commands\configHandlers\dicecfg.js" />
+    <Content Include="commands\gdpr.js" />
+    <Content Include="commands\configHandlers\blacklist.js" />
+    <Content Include="commands\configHandlers\cmdblacklist.js" />
+    <Content Include="commands\configHandlers\dice.js" />
+    <Content Include="commands\configHandlers\log.js" />
+    <Content Include="commands\configHandlers\language.js" />
+    <Content Include="commands\configHandlers\prefix.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="components\language.js" />
-    <Content Include=".\messageHandlers\diceHandler.js" />
+    <Content Include="config.example.json" />
+    <Content Include="diceEngines\default.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="listeners\messageCreateHandlers\diceHandler.js" />
     <Content Include=".\bot.js" />
     <Content Include=".\package.json" />
     <Content Include=".\README.md" />
@@ -68,13 +81,13 @@
     <Content Include="config\newTulpa.json" />
     <Content Include="config\newUser.json" />
     <Content Include="config\servers.json" />
-    <Content Include="config\users.json" />
-    <Content Include="config\webhooks.json" />
+    <Content Include="config\hosts.json" />
+    <Content Include="config\serverWebhooks.json" />
     <Content Include="config\_tulpae.json" />
     <Content Include="listeners\guildCreate.js" />
     <Content Include="listeners\error.js" />
     <Content Include="listeners\disconnect.js" />
-    <Content Include="util\priorities.js">
+    <Content Include="components\priorities.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="components\rendering.js">
@@ -96,8 +109,8 @@
     <Content Include="listeners\ready.js">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="messageHandlers\tulpaHandler.js" />
-    <Content Include="messageHandlers\commandHandler.js" />
+    <Content Include="listeners\messageCreateHandlers\tulpaHandler.js" />
+    <Content Include="listeners\messageCreateHandlers\commandHandler.js" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include=".\commands\" />
@@ -107,10 +120,12 @@
     <Folder Include=".\commands\" />
     <Folder Include=".\listeners\" />
     <Folder Include="commands\" />
+    <Folder Include="commands\configHandlers\" />
     <Folder Include="components\" />
     <Folder Include="listeners\" />
-    <Folder Include="messageHandlers\" />
+    <Folder Include="listeners\messageCreateHandlers\" />
     <Folder Include="config\" />
+    <Folder Include="diceEngines\" />
     <Folder Include="util\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
