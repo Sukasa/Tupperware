@@ -18,7 +18,7 @@ module.exports = function (bot) {
 
 			let channel = msg.channel;
 
-			if (msg.channel && msg.channel instanceof Eris.privateChannel)
+			if (msg.channel && msg.channel instanceof Eris.PrivateChannel)
 				return;
 
 			if (msg.channel.guild && msg.channel.guild.systemChannelID)
