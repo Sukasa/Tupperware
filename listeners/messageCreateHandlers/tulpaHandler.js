@@ -62,8 +62,18 @@ module.exports = function (bot) {
 		}
 
 		// If we found match(es), return the array as a signal we can handle the message here (this will be passed to exec() as the state, so it's useful)
-		if (replace[0])
+		if (replace[0]) {
+			
+			// If we have multiple messages from the same tulpa in a row, merge them instead of submitting as separate messages
+			for (var i = replace.length - 1; i > 0; i--) {
+				if (replace[i - 1][2] == replace[i][2]) {
+					replace[i - 1][3] = replace[i - 1][3] + "\n" + replace[i][3];
+					replace.splice(i, 1);
+				}
+			}
+
 			return replace;
+		}
 
 		// Otherwise return false as a signal we can't handle the message here.
 		return false;
