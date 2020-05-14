@@ -41,9 +41,12 @@
     <Content Include="commands\configHandlers\prefix.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="commands\flush.js" />
+    <Content Include="commands\setstatus.js" />
     <Content Include="commands\notify.js" />
     <Content Include="components\language.js" />
     <Content Include="config.example.json" />
+    <Content Include="config\_devmode_config.json" />
     <Content Include="diceEngines\default.js">
       <SubType>Code</SubType>
     </Content>
