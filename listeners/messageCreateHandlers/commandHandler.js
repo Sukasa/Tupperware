@@ -23,6 +23,7 @@ module.exports = function (bot) {
 						bot.messaging.send(msg.channel, content);
 				} catch (e) {
 					bot.messaging.send(msg.channel, `${e}`)
+					bot.logger.error(e);
 					console.log(e);
 				}
 			}

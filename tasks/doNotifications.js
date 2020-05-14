@@ -50,7 +50,7 @@ module.exports = function (bot) {
     };
 
     if (bot.config.notify.busy) {
-        console.log("- Queueing incomplete notification task on 10 second delay");
+        bot.logger.info("- Queueing incomplete notification task on 10 second delay");
         setTimeout(execute, 10000);
     }
 

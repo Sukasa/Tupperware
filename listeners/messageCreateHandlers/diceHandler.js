@@ -27,7 +27,7 @@ module.exports = function (bot) {
 			try {
 				await bot.executeWebhook(hook.id, hook.token, data);
 			} catch (e) {
-				console.log(e);
+				bot.logger.error(e);
 				if (e.code === 10015) {
 					delete bot.serverWebhooks[msg.channel.id];
 					const hook = await bot.webhooks.fetchWebhook(msg.channel);

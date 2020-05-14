@@ -2,7 +2,7 @@ const Eris = require("eris");
 
 module.exports = function (bot) {
 	return {
-		help: cfg => `Configure the default ${cfg.singular} to use on this server if no brackets are provided in a message`,
+		help: cfg => `Set the default ${cfg.singular} to use here if no brackets are used`,
 		usage: cfg => [`default <name> - Set the named ${cfg.singular} as default for this server`,
 		`default clear - Unset the default ${cfg.singular} as default for this server`],
 		permitted: () => true,

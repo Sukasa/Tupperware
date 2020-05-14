@@ -1,7 +1,7 @@
 module.exports = function (bot) {
 	return {
 		help: cfg => `View or set biographical information about ${cfg.singularArticle} ${cfg.singular}`,
-		usage: cfg => [`bio <keys> - List the available biographical keys`,
+		usage: cfg => [`bio keys - List the available biographical keys`,
 			`bio <name> <key> [value] - Set or view biographical data for ${cfg.singularArticle} ${cfg.singular}`,
 			`bio <name> <key> <clear> - Remove biographical data for ${cfg.singularArticle} ${cfg.singular}`],
 		permitted: () => true,

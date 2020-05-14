@@ -6,7 +6,7 @@ module.exports = function (bot) {
 
 	// Load message handlers
 	fs.readdirSync("./listeners/messageCreateHandlers").forEach(file => {
-		console.log(`- Loading message handlers ${file}`);
+		bot.logger.info(`- Loading message handlers ${file}`);
 		messageHandlers.push(require("./messageCreateHandlers/" + file)(bot))
 	});
 	messageHandlers.sort((b, a) => { a.priority - b.priority });

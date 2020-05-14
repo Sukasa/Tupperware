@@ -3,6 +3,9 @@ module.exports = function (bot) {
 	function generateTulpaField(tulpa) {
 		var data = [""];
 
+		if (tulpa.tag)
+			data.push(["Tag", tulpa.tag]);
+
 		Object.keys(tulpa.bio).forEach(key => {
 			if (key && tulpa.bio[key])
 				data.push([bot.language.parseCamelCase(key), tulpa.bio[key]]);
@@ -21,7 +24,7 @@ module.exports = function (bot) {
 		data.push(["Messages Sent", tulpa.posts]);
 
 		return {
-			name: tulpa.fullName || tulpa.name,
+			name: tulpa.name,
 			value: (data.reduce((a, c) => a + `${c[0]}: ${c[1]}\n`) + (tulpa.desc ? tulpa.desc : ""))
 		};
 	};

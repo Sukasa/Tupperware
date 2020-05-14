@@ -99,7 +99,7 @@ module.exports = function (bot) {
 
 		// If there's an attachment, handle that separately
 		if (msg.attachments[0]) {
-			return bot.webhooks.sendAttachmentsWebhook(msg, cfg, data, content, hook);
+			return bot.webhooks.sendAttachment(msg, cfg, data, content, hook);
 		}
 
 		// Otherwise post to the channel via webhook
@@ -107,7 +107,7 @@ module.exports = function (bot) {
 		try {
 			webmsg = await bot.executeWebhook(hook.id, hook.token, data);
 		} catch (e) {
-			console.log(e);
+			bot.logger.error(e);
 			if (e.code === 10015) {
 				delete bot.serverWebhooks[msg.channel.id];
 				const hook = await bot.webhooks.fetchWebhook(msg.channel);
@@ -128,7 +128,10 @@ module.exports = function (bot) {
 				if (msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
 					msg.delete().catch(e => { if (e.code == 50013) { bot.messaging.send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); } });
 				bot.configuration.markDirty("hosts");
-			}).catch(e => { console.log(e); bot.messaging.send(msg.channel, e); });
+			}).catch(e => {
+				bot.logger.error(e);
+				bot.messaging.send(msg.channel, e);
+			});
 	}
 
 	return {

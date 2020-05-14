@@ -43,9 +43,9 @@ module.exports = function (bot) {
 	const path = require('path').dirname(require.main.filename);
 
 	function save(filename, configFile) {
-		console.log(`saving ${filename} to ${path}/config/${filename}`);
+		bot.logger.debug(`saving ${filename} to ${path}/config/${filename}`);
 		dirty[filename] = false;
-		return fs.writeFile(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { console.log(`Saved ${filename}`); });
+		return fs.writeFile(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { bot.logger.debug(`Saved ${filename}`); });
 	};
 
 	function doSaves() {

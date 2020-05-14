@@ -30,7 +30,7 @@ module.exports = function (bot) {
 
 			// Only collect/update GDPR-ish data (username, discriminator) for users that have a registered tulpa
 			if (Object.keys(user.tulpae).length && usr.username && (usr.username != user.username || user.discriminator != usr.discriminator)) {
-				console.log("Updating information for " + usr.username);
+				bot.logger.info("Updating information for " + usr.username);
 				user.username = usr.username;
 				user.discriminator = usr.discriminator;
 				bot.configuration.markDirty("hosts");

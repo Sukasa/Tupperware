@@ -5,7 +5,7 @@ module.exports = function (bot) {
 	let handlers = [];
 
 	fs.readdirSync("./commands/configHandlers").forEach(file => {
-		console.log(`- Loading cfg handler ${file}`);
+		bot.logger.info(`- Loading cfg handler ${file}`);
 		handlers[file.slice(0, -3)] = require("./configHandlers/" + file)(bot)
 	});
 

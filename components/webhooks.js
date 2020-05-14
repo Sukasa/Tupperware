@@ -31,7 +31,7 @@ module.exports = function (bot) {
 		return new Promise((resolve, reject) => {
 			bot.executeWebhook(hook.id, hook.token, data)
 				.catch(e => {
-					console.log(e);
+					bot.logger.error(e);
 					if (e.code == 10015) {
 						delete bot.serverWebhooks[msg.channel.id];
 						return fetchWebhook(msg.channel).then(hook => {

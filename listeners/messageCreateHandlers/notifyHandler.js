@@ -1,3 +1,5 @@
+const Eris = require("eris");
+
 module.exports = function (bot) {
 	const priorities = bot.priorities;
 
@@ -16,7 +18,10 @@ module.exports = function (bot) {
 
 			let channel = msg.channel;
 
-			if (msg.channel.guild.systemChannelID)
+			if (msg.channel && msg.channel instanceof Eris.privateChannel)
+				return;
+
+			if (msg.channel.guild && msg.channel.guild.systemChannelID)
 				channel = bot.resolvers.resolveChannel(msg, msg.channel.guild.systemChannelID) || channel;
 
 			if (cfg.notify) {

@@ -34,6 +34,8 @@ module.exports = function (bot) {
 			};
 			let len = 200;
 			let page = 1;
+
+
 			Object.values(target.tulpae).forEach(t => {
 				let field = bot.rendering.generateTulpaField(t);
 				len += field.name.length;
