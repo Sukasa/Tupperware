@@ -29,9 +29,9 @@ module.exports = function (bot) {
 			}
 			// TODO this duplicates some code in doNotifications.js
 			if (cfg.lastNotify) {
-				bot.messaging.send(channel, "**Service Notification:**\n" + bot.config.notify.notifyMessage.replace("%NAME%", bot.config.name).replace("%PREFIX%", cfg.prefix));
+				bot.messaging.send(channel, "**Service Notification:**\n" + bot.config.notify.notifyMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
 			} else {
-				bot.messaging.send(channel, bot.config.introMessage.replace("%NAME%", bot.config.name).replace("%PREFIX%", cfg.prefix));
+				bot.messaging.send(channel, bot.config.introMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
 			}
 			cfg.lastNotify = Date.now();
 

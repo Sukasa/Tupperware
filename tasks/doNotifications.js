@@ -28,7 +28,7 @@ module.exports = function (bot) {
                         targetChannel = guild.channels.get(guild.systemChannelID);
 
                     if (targetChannel) {
-                        bot.messaging.send(targetChannel, bot.config.notify.notifyMessage.replace("%NAME%", bot.config.name).replace("%PREFIX%", cfg.prefix));
+                        bot.messaging.send(targetChannel, bot.config.notify.notifyMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
                         cfg.lastNotify = Date.now();
                     }
 
