@@ -4,7 +4,7 @@ const probe = require("probe-image-size");
 
 module.exports = function (bot) {
 	function resolveCompareText(a, b) {
-		return a && b && a.toLowerCase().indexOf(b.toLowerCase()) > -1;
+		return a && b && (a.toLowerCase().indexOf(b.toLowerCase()) > -1 || b.toLowerCase().indexOf(a.toLowerCase()) > -1);
 	}
 
 	function resolveKey(haystack, needle) {
@@ -19,7 +19,8 @@ module.exports = function (bot) {
 	}
 
 	function resolveUser(msg, text) {
-		let target = msg.channel.guild.members[text] || msg.channel.guild.members.find(m => m.id == text || m.username.toLowerCase() == text.toLowerCase() || (m.nick && m.nick.toLowerCase()) == text.toLowerCase() || text.toLowerCase() == `${m.username.toLowerCase()}#${m.discriminator}`);
+		let target = msg.channel.guild.members[text] ||
+			msg.channel.guild.members.find(m => resolveCompareText(m.id, text) || resolveCompareText(m.username, text) || resolveCompareText(m.nick, text) || resolveCompareText(text, `${m.username.toLowerCase()}#${m.discriminator}`));
 		if (target && target.user) target = target.user;
 		return target;
 	};

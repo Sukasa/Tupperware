@@ -8,7 +8,7 @@ module.exports = function (bot) {
 
 		test: function (msg) {
 			let cfg = bot.configuration.getServerConfig(msg);
-			return msg.content.toLowerCase().startsWith(cfg.prefix) && (!cfg.cmdblacklist.includes(msg.channel.id));
+			return msg.content.toLowerCase().startsWith(cfg.prefix) && (!cfg.cmdblacklist || !cfg.cmdblacklist.includes(msg.channel.id));
 		},
 
 		execute: async (msg) => {

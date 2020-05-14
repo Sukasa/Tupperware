@@ -17,6 +17,7 @@ module.exports = function (bot) {
 			userID: userMsg.author.id,
 			name: data ? data.username : tulpa.name,
 			tulpa: data.tulpa,
+			data: data,
 			id: botMsg.id,
 			tag: `${userMsg.author.username}#${userMsg.author.discriminator}`
 		});
@@ -24,11 +25,11 @@ module.exports = function (bot) {
 	};
 
 	function isRecent(msg, userID) {
-		return recent && recent[msg.chann.id] && recent[msg.channel.id].find(r => r.userID == userID && msg.id == r.id);
+		return recent && recent[msg.channel.id] && recent[msg.channel.id].find(r => r.userID == userID && msg.id == r.id);
 	}
 
 	function isUsernameCollision(msg, username) {
-		return recent && recent[msg.channel.id] && recent[msg.channel.id][0].userID != msg.author.id && recent[msg.channel.id][0].data.username == username;
+		return recent && recent[msg.channel.id] && recent[msg.channel.id][0].userID != msg.author.id && recent[msg.channel.id][0].data && recent[msg.channel.id][0].data.username == username;
 	}
 
 	function getRecent(channel) {

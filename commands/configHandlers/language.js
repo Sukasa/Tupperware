@@ -14,7 +14,7 @@ module.exports = function (bot) {
 			cfg.plural = args[1];
 			bot.configuration.validateGuildCfg(msg);
 
-			return "Updated langauge";
+			return "Updated language";
 		}
 	};
 }

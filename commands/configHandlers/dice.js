@@ -1,7 +1,7 @@
 module.exports = function (bot) {
 
 	return {
-		usage: cfg => ["cfg dice [off|none|(engine)] - Selects or shows the dice engine for this server",
+		usage: cfg => ["cfg dice [off|(engine)] - Selects or shows the dice engine for this server",
 			"cfg dice <list> - List available dice engines"],
 		exec: async (msg, cfg, args) => {
 			if (!args[0])
@@ -9,7 +9,7 @@ module.exports = function (bot) {
 
 			switch (args[0].toLowerCase()) {
 				case "off":
-				case "none":
+				case "none": // removed from usage but left here in case people try to use it
 					cfg.dice = false;
 					cfg.diceCfg = {};
 					bot.configuration.markDirty("servers");

@@ -1,6 +1,6 @@
 {
   "id": null,
-  "serverDefaults": [],
+  "serverDefaults": {},
   "coexistenceIgnore": false,
   "tulpae": {}
 }

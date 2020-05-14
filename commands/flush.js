@@ -6,6 +6,7 @@ module.exports = function (bot) {
 		permitted: () => false,
 		execute: function (msg, args, cfg) {
 			bot.configuration.doSaves();
+			return "Flushed dirty configuration files to disk"
 		}
 	};
 }

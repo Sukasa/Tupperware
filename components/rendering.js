@@ -15,14 +15,14 @@ module.exports = function (bot) {
 			data.push(["Birthday", new Date(tulpa.birthday).toDateString()]);
 		}
 
-		if (tulpa.forms && tulpa.forms.length > 1)
+		if (tulpa.forms && (Object.keys(tulpa.forms).length > 1))
 			data.push(["Forms", Object.keys(tulpa.forms).map(form => tulpa.url == tulpa.forms[form] ? `**${form}**` : form).join(", ")]);
 
 		data.push(["Messages Sent", tulpa.posts]);
 
 		return {
 			name: tulpa.fullName || tulpa.name,
-			value: (data.reduce((a, c) => a + `${c[0]}: ${c[1]}\n`) + tulpa.desc)
+			value: (data.reduce((a, c) => a + `${c[0]}: ${c[1]}\n`) + (tulpa.desc ? tulpa.desc : ""))
 		};
 	};
 

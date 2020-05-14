@@ -19,6 +19,7 @@ module.exports = function (bot) {
 				let user = bot.tulpae.getUser(msg);
 				delete user.serverDefaults[msg.channel.guild.id];
 				out = `Default ${cfg.singular} for this server has been unset.`;
+				bot.configuration.markDirty("hosts");
 			} else {
 				let user = bot.tulpae.getUser(msg);
 				let tulpa = bot.tulpae.getTulpa(user, args[0]);
