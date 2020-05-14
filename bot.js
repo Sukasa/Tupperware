@@ -36,6 +36,13 @@ bot.launch = function () {
 	bot.commands = {};
 	bot.data = {};
 	bot.diceEngines = {};
+	bot.tasks = {};
+	bot.taskData = {};
+
+
+	bot.currNotify = "";
+	bot.lastNotify = 0;
+
 
 	// Load configuration
 	fs.readdirSync("./config").forEach(file => {
@@ -73,7 +80,12 @@ bot.launch = function () {
 		console.log(`Loading dice engine ${file}`);
 		bot.diceEngines[file.slice(0, -3)] = require("./diceEngines/" + file)(bot);
 	});
-	
+
+	// Load Tasks
+	fs.readdirSync("./tasks").forEach(file => {
+		console.log(`Loading task ${file}`);
+		bot.tasks[file.slice(0, -3)] = require("./tasks/" + file)(bot);
+	});
 	bot.connect();
 }
 
