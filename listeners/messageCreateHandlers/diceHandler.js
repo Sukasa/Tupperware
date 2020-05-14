@@ -19,7 +19,7 @@ module.exports = function (bot) {
 			const hook = await bot.webhooks.fetchWebhook(msg.channel)
 			const data = {
 				wait: true,
-				content: resultSets.join("\n"),
+				content: `**${msg.author.username}**: \n` + resultSets.join("\n"),
 				username: `Dice Roll${resultSets.length > 1 ? "s" : ""}`,
 				avatarURL: "https://greenfirework.com/dicerollflat.png",
 			};

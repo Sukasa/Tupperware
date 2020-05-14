@@ -1,5 +1,5 @@
-let diceRegex = /!(?:(?:roll\s|dice\s)?((?:\d+)?)d(\d+))\s*((?:\s*?(?:-|\+|top|bottom|drop|tn)\s*-?\d+\s*?)+)?/gi;
-let modifierRegex = /(?:(\+|\-|top|bottom|drop|tn)\s*(\d+))/gi;
+let diceRegex = /!(?:(?:roll\s|dice\s)?((?:\d+)?)d(\d+))\s*((?:\s*?(?:-|\+|\*|top|bottom|drop|tn)\s*-?[0-9.]*[0-9]+\s*?)+)?/gi;
+let modifierRegex = /(?:(\+|\-|\*|top|bottom|drop|tn)\s*(-?[0-9.]*[0-9]+))/gi;
 const crypto = require("crypto");
 
 module.exports = function () {
@@ -19,6 +19,7 @@ module.exports = function () {
 		let numSides = rollMatch[2];
 		let modifiers = rollMatch[3];
 		let finalAdjust = 0;
+		let multiplier = 1;
 		let tn;
 
 		let rolls = [];
@@ -72,6 +73,9 @@ module.exports = function () {
 					case "-":
 						finalAdjust = Number(finalAdjust) - Number(by);
 						break;
+					case "*":
+						multiplier = multiplier * Number(by);
+						break;
 				}
 			}
 		}
@@ -79,7 +83,7 @@ module.exports = function () {
 		// Modifiers applied and final adjustment done.  Now to make the output string.
 		var finalResult = rolls.map(x => x.valid ? `${x.value}` : `||${x.value}||`).join(", ");
 		var output = `**${numDice}d${numSides}${modifiers ? ` ${modifiers}` : ""}**: ${finalResult}`;
-		let finalRoll = rolls.reduce((s, r) => s + (r.valid && r.value), 0);
+		let finalRoll = rolls.reduce((s, r) => s + (r.valid && r.value), 0) * multiplier;
 
 		if (tn) {
 			tn = Number(tn) + Number(finalAdjust);
