@@ -87,6 +87,10 @@ bot.launch = function () {
 		console.log(`Loading task ${file}`);
 		bot.tasks[file.slice(0, -3)] = require("./tasks/" + file)(bot);
 	});
+
+	console.log("\n**********");
+	console.log("Starting bot\n");
+
 	bot.connect();
 }
 
