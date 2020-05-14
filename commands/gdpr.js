@@ -3,10 +3,11 @@ module.exports = function (bot) {
 
 	return {
 		help: cfg => `GDPR information and commands`,
-		usage: cfg => [`gdpr <policy> - See the bot's GDPR policy`,
-					   `gdpr <delete> - Request that the bot delete all information regarding you and any registered ${cfg.plural}.`],
+		usage: cfg => [`gdpr policy - See the bot's GDPR policy`,
+					   `gdpr export - Be DM'd all data the bot has regarding you`,
+					   `gdpr delete - Request that the bot delete all information regarding you and any registered ${cfg.plural}.`],
 		permitted: () => true,
-		desc: cfg => "GDPR compliance",
+		desc: cfg => "Information and commands related to the European GDPR regulations",
 		execute: async (msg, args, cfg) => {
 			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
 
@@ -18,9 +19,16 @@ module.exports = function (bot) {
 			switch (args[0].toLowerCase()) {
 				case "policy":
 					out = [`This bot includes best-effort compliance with European GDPR regulations.  No user data is collected or stored until you opt in by registering ${cfg.singularArticle} ${cfg.singular}.`,
-						`The Eris library that this bot is based around may collect user information such as nickname, Discord Id, username, discriminator, et al as necessary for its operation, however this data`,
+						`The Eris library that this bot is based on may collect user information such as nickname, Discord Id, username, discriminator, et al as necessary for its operation, however this data`,
 						`is neither retransmitted, processed, or stored outside of what is minimally necessary to interoperate with Discord's API.`
 					].join('\n');
+					break;
+				case "export":
+
+					let text = JSON.stringify(bot.tulpae.getUser(msg));
+					msg.author.getDMChannel().then(function (channel) { bot.messaging.send(channel, text) });
+
+					out = "Data has been DM'd to you";
 					break;
 				case "delete":
 					if (args[1]) {
