@@ -1,3 +1,4 @@
+const Eris = require("eris");
 const request = require("got");
 
 module.exports = function (bot) {
@@ -5,7 +6,7 @@ module.exports = function (bot) {
 		return new Promise((resolve, reject) => {
 			if (bot.serverWebhooks[channel.id])
 				resolve(bot.serverWebhooks[channel.id]);
-			else if (!channel.permissionsOf(bot.user.id).has("manageWebhooks"))
+			else if (!(channel && (channel instanceof Eris.PrivateChannel)) && !channel.permissionsOf(bot.user.id).has("manageWebhooks"))
 				reject("Proxy failed: Missing 'Manage Webhooks' permission in this channel.");
 			else {
 				channel.createWebhook({ name: "Tupperhook" }).then(hook => {
@@ -18,7 +19,7 @@ module.exports = function (bot) {
 	}
 
 	async function attach(url) {
-		return (await request(url, { encoding: null })).body;
+		return (await request(url, { responseType: "buffer" })).body;
 	}
 
 	async function sendAttachmentsWebhook(msg, cfg, data) {
@@ -29,7 +30,7 @@ module.exports = function (bot) {
 		}
 		data.file = files;
 		return new Promise((resolve, reject) => {
-			bot.executeWebhook(hook.id, hook.token, data)
+			let webmsg = await bot.executeWebhook(hook.id, hook.token, data)
 				.catch(e => {
 					bot.logger.error(e);
 					if (e.code == 10015) {
@@ -41,18 +42,12 @@ module.exports = function (bot) {
 				}).then(() => {
 					bot.logging.logMessage(msg, data.content, data.tulpa)
 
-					// TODO tulpa stats elsewhere
-					//if (!tulpa.posts)
-					//	tulpa.posts = 0;
-					//tulpa.posts++;
-
-					// TODO recent check
-					if (!recent[msg.channel.id] && !msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
+					if ((!msg.channel instanceof Eris.PrivateChannel) && !msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
 						bot.messaging.send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.singular + " webhook message will show.");
-					bot.messaging.addRecent(msg, webmsg, data);
 
 					resolve();
 				}).catch(reject);
+			bot.messaging.addRecent(msg, webmsg, data);
 		});
 	};
 
