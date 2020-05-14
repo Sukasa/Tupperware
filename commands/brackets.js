@@ -9,7 +9,7 @@ module.exports = function (bot) {
 		execute: function (msg, args, cfg) {
 			let out = "";
 			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
-			console.log(args);
+
 			if (!args[0])
 				return bot.commands.help.execute(msg, ["brackets"], cfg);
 
@@ -60,8 +60,8 @@ module.exports = function (bot) {
 					}
 
 				}
-				return out;
 			}
+			return out;
 		}
 	};
 }
