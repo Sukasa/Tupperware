@@ -31,6 +31,7 @@
   <ItemGroup>
     <Content Include=".gitignore" />
     <Content Include="commands\configHandlers\dicecfg.js" />
+    <Content Include="commands\configHandlers\notify.js" />
     <Content Include="commands\gdpr.js" />
     <Content Include="commands\configHandlers\blacklist.js" />
     <Content Include="commands\configHandlers\cmdblacklist.js" />
@@ -40,11 +41,13 @@
     <Content Include="commands\configHandlers\prefix.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="commands\notify.js" />
     <Content Include="components\language.js" />
     <Content Include="config.example.json" />
     <Content Include="diceEngines\default.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="listeners\messageCreateHandlers\notifyHandler.js" />
     <Content Include="listeners\messageCreateHandlers\diceHandler.js" />
     <Content Include=".\bot.js" />
     <Content Include=".\package.json" />
@@ -111,6 +114,9 @@
     </Content>
     <Content Include="listeners\messageCreateHandlers\tulpaHandler.js" />
     <Content Include="listeners\messageCreateHandlers\commandHandler.js" />
+    <Content Include="tasks\doNotifications.js">
+      <SubType>Code</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include=".\commands\" />
@@ -126,7 +132,7 @@
     <Folder Include="listeners\messageCreateHandlers\" />
     <Folder Include="config\" />
     <Folder Include="diceEngines\" />
-    <Folder Include="util\" />
+    <Folder Include="tasks\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
