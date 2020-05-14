@@ -126,11 +126,10 @@ module.exports = function (bot) {
 		Promise.all(state.map(r => createTulpaMessage(...r)))
 			.then(() => {
 				if (msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
-					msg.delete().catch(e => { if (e.code == 50013) { bot.messaging.send(msg.channel, "Warning: I'm missing permissions needed to properly replace messages."); } });
+					msg.delete().catch(e => { if (e.code == 50013) { throw "Warning: I'm missing permissions needed to properly replace messages."; } });
 				bot.configuration.markDirty("hosts");
 			}).catch(e => {
 				bot.logger.error(e);
-				bot.messaging.send(msg.channel, e);
 			});
 	}
 
