@@ -30,7 +30,7 @@ module.exports = function (bot) {
 		}
 		data.file = files;
 		return new Promise((resolve, reject) => {
-			let webmsg = await bot.executeWebhook(hook.id, hook.token, data)
+			let webmsg = bot.executeWebhook(hook.id, hook.token, data)
 				.catch(e => {
 					bot.logger.error(e);
 					if (e.code == 10015) {
@@ -45,9 +45,9 @@ module.exports = function (bot) {
 					if ((!msg.channel instanceof Eris.PrivateChannel) && !msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
 						bot.messaging.send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.singular + " webhook message will show.");
 
+					bot.messaging.addRecent(msg, webmsg, data);
 					resolve();
 				}).catch(reject);
-			bot.messaging.addRecent(msg, webmsg, data);
 		});
 	};
 
