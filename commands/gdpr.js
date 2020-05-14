@@ -1,11 +1,13 @@
 module.exports = function (bot) {
 	let confirmationCodes = {};
 
+	const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 	return {
 		help: cfg => `GDPR information and commands`,
 		usage: cfg => [`gdpr policy - See the bot's GDPR policy`,
-					   `gdpr export - Be DM'd all data the bot has regarding you`,
-					   `gdpr delete - Request that the bot delete all information regarding you and any registered ${cfg.plural}.`],
+			`gdpr export - Be DM'd all data the bot has regarding you`,
+			`gdpr delete - Request that the bot delete all information regarding you and any registered ${cfg.plural}.`],
 		permitted: () => true,
 		desc: cfg => "Information and commands related to the European GDPR regulations",
 		execute: async (msg, args, cfg) => {
@@ -22,13 +24,6 @@ module.exports = function (bot) {
 						`The Eris library that this bot is based on may collect user information such as nickname, Discord Id, username, discriminator, et al as necessary for its operation, however this data`,
 						`is neither retransmitted, processed, or stored outside of what is minimally necessary to interoperate with Discord's API.`
 					].join('\n');
-					break;
-				case "export":
-
-					let text = JSON.stringify(bot.tulpae.getUser(msg));
-					msg.author.getDMChannel().then(function (channel) { bot.messaging.send(channel, text) });
-
-					out = "Data has been DM'd to you";
 					break;
 				case "delete":
 					if (args[1]) {
@@ -49,6 +44,25 @@ module.exports = function (bot) {
 						confirmationCodes[id] = code;
 						out = `Are you sure you wish for this bot to delete ALL data relevant to you?  This will unregister ALL of your ${cfg.plural} and cannot be undone!\nPlease say \`${cfg.prefix}gdpr delete ${code}\` to confirm this operation.`;
 					}
+					break;
+				case "export":
+
+					let channel = await msg.author.getDMChannel();					
+					let splits = JSON.stringify(bot.tulpae.getUser(msg), null, 1).split("\n");
+
+					let working = "";
+
+					for (s in splits) {
+						let split = splits[s];
+						if ((working.length + split.length) > 1500) {
+							await bot.messaging.send(channel, working);
+							await snooze(500);
+							working = "";
+						}
+						working = working + "\n" + split;
+					}
+
+					out = "Data has been DM'd to you";
 					break;
 				default:
 					out = `Invalid command ${args[0]}`;
