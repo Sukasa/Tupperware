@@ -7,7 +7,6 @@ module.exports = function (bot) {
 			let out = "";
 			let target;
 			if (args[0]) {
-				// TODO this may not work properly
 				target = bot.resolvers.resolveUser(msg, args.join(" "));
 			} else {
 				target = msg.author;

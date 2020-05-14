@@ -2,8 +2,6 @@ const zwsp = String.fromCharCode(8203); //zero-width space for embed formatting
 
 module.exports = function (bot) {
 
-
-	// TODO crash 
 	function checkPermissions(cmd, msg, args) {
 		return (msg.author.id === bot.config.owner) || (bot.commands[cmd].permitted(msg, args));
 	};

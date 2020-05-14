@@ -21,7 +21,6 @@ module.exports = function (bot) {
 		if (public)
 			cfg = bot.configuration.getServerConfig(msg)
 
-		// TODO loop through message handlers, the first one that returns "yes I can handle this" is executed
 		for (let i in messageHandlers) {
 			let state = null;
 			let handler = messageHandlers[i];
