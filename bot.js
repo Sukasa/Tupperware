@@ -22,8 +22,9 @@ logger.configure({
 var bot = new Eris(require("./config/config.json").discord);
 
 bot.updateStatus = function (status) {
-	bot.status = status || bot.status;
-	bot.editStatus({ name: bot.status });
+	bot.config.status = status || bot.config.status;
+	bot.editStatus({ name: bot.config.status });
+	bot.configuration.markDirty("config");
 }
 
 bot.launch = function () {
