@@ -4,8 +4,9 @@ module.exports = function (bot) {
 		usage: cfg => ["cfg cmdblacklist <add|remove> <channel(s)> - Command blacklist management"],
 		exec: async (msg, cfg, args) => {
 			let out = "";
+			cfg.cmdblacklist = cfg.cmdblacklist || [];
 			if (!args[0])
-				if (cfg.blacklist)
+				if (cfg.cmdblacklist.length)
 					return `Currently command-blacklisted channels: ${cfg.cmdblacklist.map(id => "<#" + id + ">").join(" ")}`;
 				else
 					return "No channels currently command-blacklisted.";

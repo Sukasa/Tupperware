@@ -61,6 +61,7 @@ module.exports = function (bot) {
 						}
 						working = working + "\n" + split;
 					}
+					await bot.messaging.send(channel, working);
 
 					out = "Data has been DM'd to you";
 					break;

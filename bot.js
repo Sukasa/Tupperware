@@ -23,7 +23,8 @@ var bot = new Eris(require("./config/config.json").discord);
 bot.updateStatus = function (status) {
 	bot.config.status = status || bot.config.status;
 	bot.editStatus({ name: bot.config.status });
-	bot.configuration.markDirty("config");
+	if (status)
+		bot.configuration.markDirty("config");
 }
 
 bot.launch = function () {

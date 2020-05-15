@@ -3,9 +3,10 @@ module.exports = function (bot) {
 	return {
 		usage: cfg => ["cfg blacklist <add|remove> <channel(s)> - Proxy blacklist management."],
 		exec: async (msg, cfg, args) => {
+			cfg.blacklist = cfg.blacklist || [];
 			let out = "";
 			if (!args[0])
-				if (cfg.blacklist)
+				if (cfg.blacklist.length)
 					return `Currently blacklisted channels: ${cfg.blacklist.map(id => "<#" + id + ">").join(" ")}`;
 				else
 					return "No channels currently blacklisted.";
