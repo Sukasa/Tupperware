@@ -15,18 +15,18 @@ module.exports = function (bot) {
 		let public = (msg.channel instanceof Eris.TextChannel);
 		let cfg;
 
-		if (msg.author.id == bot.id)
-			return;
-
+		let isBot = msg.author.bot;			
+		
 		if (public)
-			cfg = bot.configuration.getServerConfig(msg)
+			cfg = bot.configuration.getServerConfig(msg);
 
 		for (let i in messageHandlers) {
 			let state = null;
 			let handler = messageHandlers[i];
-			if (((public && !(handler.blacklist && handler.blacklist(cfg) && handler.blacklist(cfg).includes(msg.channel.id))) || (!public && handler.private)) && (state = handler.test(msg))) {
+			if (((public && !(handler.blacklist && handler.blacklist(cfg) && handler.blacklist(cfg).includes(msg.channel.id))) || (!public && handler.private)) && (!isBot || handler.allowBot) && (state = handler.test(msg))) {
 				handler.execute(msg, state);
-				break;
+				if (handler.exclusive)
+					break;
 			}
 		}
 	};

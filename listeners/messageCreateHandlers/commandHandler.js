@@ -2,8 +2,10 @@ module.exports = function (bot) {
 	const priorities = bot.priorities;
 
 	return {
-		priority: priorities.HIGHEST,
+		priority: priorities.HIGH,
 		private: true,
+		allowBot: false,
+		exclusive: true,
 		blacklist: (cfg) => cfg.cmdblacklist,
 
 		test: function (msg) {

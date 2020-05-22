@@ -134,9 +134,10 @@ module.exports = function (bot) {
 	}
 
 	return {
-		priority: priorities.LOWEST,
+		priority: priorities.LOW,
 		inDMs: false,
 		test: test,
+		allowBot: false,
 		execute: execute,
 		blacklist: (cfg) => cfg.blacklist
 	};

@@ -4,8 +4,9 @@ module.exports = function (bot) {
 	const priorities = bot.priorities;
 
 	return {
-		priority: priorities.MEDIUM,
+		priority: priorities.HIGHEST,
 		private: true,
+		allowBot: false,
 		blacklist: (cfg) => cfg.cmdblacklist,
 
 		test: function (msg) {
