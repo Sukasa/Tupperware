@@ -4,6 +4,7 @@ module.exports = function (bot) {
 
     async function execute() {
         let count = 0;
+        let notifications = 0;
 
         bot.logger.info("Starting notification task");
         for (guild of bot.guilds) {
@@ -34,6 +35,7 @@ module.exports = function (bot) {
                         // TODO this duplicates some code in notifyHandler.js
                         bot.messaging.send(targetChannel, "**Service Notification:**\n" + bot.config.notify.notifyMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
                         cfg.lastNotify = Date.now();
+                        notifications++;
                     } else {
                         bot.logger.debug(`Unable to determine notification channel, no notification sent`);
                     }
@@ -48,7 +50,7 @@ module.exports = function (bot) {
             }
         }
 
-        bot.logger.info(`Completed notifications for ${count} guilds`);
+        bot.logger.info(`Completed notifications for ${notifications} guilds`);
 
         if (bot.taskData.notifyResponseChannel)
             setTimeout(() => bot.messaging.send(bot.taskData.notifyResponseChannel, "Completed notification to all servers"), 2500);
