@@ -19,7 +19,7 @@ module.exports = function (bot) {
 				throw "Name must be between 2 and 28 characters.";
 
 			let user = bot.tulpae.getUser(msg);
-			if (bot.tulpae.getTulpa(user, args[0]))
+			if (bot.tulpae.getTulpa(user, args[0], 0.0))
 				throw `${proper(cfg.singularArticle)} ${cfg.singular} with that name under your user account already exists.`;
 
 			let brackets = bot.tulpae.parseBrackets(args.slice(1));

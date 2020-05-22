@@ -1,3 +1,5 @@
+const levenshtein = require("js-levenshtein");
+
 module.exports = function (bot) {
 	return {
 		help: cfg => `Change ${cfg.singularArticle} ${cfg.singular}'s name`,
@@ -24,9 +26,12 @@ module.exports = function (bot) {
 			if (!tulpa)
 				throw "You don't have a " + cfg.singular + " with that name registered.";
 
-			if (newname && tulpa.name.toLowerCase().indexOf(args[1].toLowerCase()) == -1)
-				throw "You already have a " + cfg.singular + " with that new name.";
+			if (newname) {
+				var dist = levenshtein(newname.toLowerCase(), args[1].toLowerCase());
 
+				if (dist < 1)
+					throw `You already have ${cfg.singularArticle} ` + cfg.singular + " named too similarly to that new name.";
+			}
 
 			let keys = Object.keys(user.serverDefaults).filter(k => user.serverDefaults[k] == tulpa.name);
 			keys.forEach(x => user.serverDefaults[x] = args[1]);

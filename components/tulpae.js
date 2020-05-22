@@ -1,9 +1,31 @@
+const levenshtein = require("js-levenshtein");
+
 module.exports = function (bot) {
 
-	function getTulpa(user, name) {
+	function getTulpa(user, name, maxDistance) {
 		user = getUser(user);
+		maxDistance = (maxDistance == null) ? 1.0 : maxDistance;
+
 		if (user) {
-			return Object.values(user.tulpae).find(t => t.name.toLowerCase().indexOf(name.toLowerCase()) > -1);
+			var matches = Object.values(user.tulpae).filter(t => t.name.toLowerCase().indexOf(name.toLowerCase()) > -1)
+
+			var matchDistance = 10000;
+			var closestMatch = null;
+
+			for (var i = 0; i < matches.length; i++) {
+				var distance = levenshtein(matches[i].name, name);
+				if (matchDistance > distance) {
+					closestMatch = matches[i];
+					matchDistance = distance;
+				}
+			}
+
+			if (closestMatch) {
+				matchDistance /= closestMatch.name.length;
+
+				if (matchDistance <= maxDistance)
+					return closestMatch;
+			}
 		}
 	};
 
@@ -18,6 +40,7 @@ module.exports = function (bot) {
 		bot.configuration.markDirty("hosts");
 	}
 
+	// Doesn't do user searches - use bot.resolvers.resolveUser() for that
 	function getUser(usr) {
 		let user = bot.hosts[getUserId(usr)];
 
