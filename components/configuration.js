@@ -42,16 +42,22 @@ module.exports = function (bot) {
 	}
 	const path = require('path').dirname(require.main.filename);
 
-	function save(filename, configFile) {
-		bot.logger.debug(`saving ${filename} to ${path}/config/${filename}`);
-		dirty[filename] = false;
-		return fs.writeFile(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { bot.logger.debug(`Saved ${filename}`); });
+	function save(filename, configFile, synchronous) {
+		bot.logger.debug(`Saving ${filename} to ${path}/config/${filename}`);
+        dirty[filename] = false;
+        if (synchronous) {
+            return fs.writeFileSync(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { bot.logger.debug(`Saved ${filename}`); });
+        } else {
+            return fs.writeFile(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { bot.logger.debug(`Saved ${filename}`); });
+        }
+		
 	};
 
-	function doSaves() {
+    function doSaves(synchronous) {
+        synchronous = synchronous || false;
 		for (var file in dirty)
 			if (dirty[file])
-				save(file, bot[file]);
+                save(file, bot[file], synchronous);
 	}
 
 	function markDirty(file) {
