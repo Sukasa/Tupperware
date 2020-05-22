@@ -47,7 +47,7 @@ module.exports = function (bot) {
 			Object.values(user.tulpae).find(tulpa => {
 				if (bracketSet = checkTulpa(msg, tulpa, clean)) {
 					replace.push([msg, cfg, tulpa, msg.content.substring(bracketSet[0].length, msg.content.length - bracketSet[1].length)]);
-					return true;
+					return true; // return from lambda
 				}
 			});
 		}
