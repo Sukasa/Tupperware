@@ -15,7 +15,7 @@ module.exports = function (bot) {
 
 		execute: async (msg) => {
 			let cfg = bot.configuration.getServerConfig(msg);
-			var args = msg.content.substr(cfg.prefix.length).split(" ");
+			var args = msg.content.substr(cfg.prefix.length).replace(/‘’/g, "'").split(" ");
 			var cmd = args.shift();
 			if (bot.commands[cmd] && ((msg.author.id === bot.config.owner) || (bot.commands[cmd].permitted(msg, args)))) {
 				let content;
