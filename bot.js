@@ -90,7 +90,6 @@ bot.launch = function () {
 	console.log("");
 	logger.info("**********");
 	logger.info("Connecting to Discord");
-	console.log("");
 
 	bot.connect();
 }

@@ -24,7 +24,7 @@ module.exports = function (bot) {
 			let newname = bot.resolvers.resolveKey(user.tulpae, args[1]);
 
 			if (!tulpa)
-				throw "You don't have a " + cfg.singular + " with that name registered.";
+				throw `You don't have ${cfg.singularArticle} ` + cfg.singular + " with that name registered.";
 
 			if (newname) {
 				var dist = levenshtein(newname.toLowerCase(), args[1].toLowerCase());

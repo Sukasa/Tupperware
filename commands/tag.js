@@ -14,7 +14,7 @@ module.exports = function (bot) {
 			let tulpa = bot.tulpae.getTulpa(msg, args[0]);
 
 			if (!tulpa)
-				throw `You don't have a ${cfg.singular} with that name registered.`;
+				throw `You don't have ${cfg.singularArticle} ${cfg.singular} with that name registered.`;
 
 			if (!args[1]) {
 				delete tulpa.tag;
