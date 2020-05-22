@@ -138,7 +138,7 @@ module.exports = function (bot) {
 	}
 
 	return {
-		priority: priorities.LOW,
+		priority: priorities.LOWEST,
 		inDMs: false,
 		test: test,
 		allowBot: false,

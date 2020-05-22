@@ -2,8 +2,9 @@ module.exports = function (bot) {
 	const priorities = bot.priorities;
 
 	return {
-		priority: priorities.LOWEST,
+		priority: priorities.LOW,
 		allowBot: false,
+		exclusive: true,
 
 		test: function (msg) {
 			let cfg = bot.configuration.getServerConfig(msg);
