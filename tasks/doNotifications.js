@@ -5,19 +5,21 @@ module.exports = function (bot) {
     async function execute() {
         let count = 0;
 
-        for (guildId in bot.guilds) {
-            count++;
-            let guild = bot.guilds[guildId];
+        bot.logger.info("Starting notification task");
+        for (guild of bot.guilds) {
+            count++;           
+            guild = guild[1];
             if (guild) {
-                let cfg = bot.configuration.getServerConfig(guild);
+                bot.logger.debug(`Handling notification for ${guild.name} (${guild.id}); checking configuration...`);
+                let cfg = bot.configuration.getServerConfig(guild.id);
                 if (cfg.lastNotify < bot.config.notify.currNotify) {
                     count = 0;
                     let targetChannel;
 
-                    // TODO this duplicates some code in notifyHandler.js
-
                     if (cfg.notify) {
                         if (cfg.notify == "none") {
+                            bot.logger.debug(`Notifications on this guild disabled`);
+
                             cfg.lastNotify = Date.now();
                             continue;
                         }
@@ -28,8 +30,12 @@ module.exports = function (bot) {
                         targetChannel = guild.channels.get(guild.systemChannelID);
 
                     if (targetChannel) {
-                        bot.messaging.send(targetChannel, bot.config.notify.notifyMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
+                        bot.logger.debug(`Message sent to notification channel`);
+                        // TODO this duplicates some code in notifyHandler.js
+                        bot.messaging.send(targetChannel, "**Service Notification:**\n" + bot.config.notify.notifyMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
                         cfg.lastNotify = Date.now();
+                    } else {
+                        bot.logger.debug(`Unable to determine notification channel, no notification sent`);
                     }
 
                     bot.configuration.markDirty("servers");
@@ -41,6 +47,8 @@ module.exports = function (bot) {
                 await snooze(10);
             }
         }
+
+        bot.logger.info(`Completed notifications for ${count} guilds`);
 
         if (bot.taskData.notifyResponseChannel)
             setTimeout(() => bot.messaging.send(bot.taskData.notifyResponseChannel, "Completed notification to all servers"), 2500);
