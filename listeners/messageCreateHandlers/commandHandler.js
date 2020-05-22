@@ -15,12 +15,13 @@ module.exports = function (bot) {
 
 		execute: async (msg) => {
 			let cfg = bot.configuration.getServerConfig(msg);
-			var args = msg.content.substr(cfg.prefix.length).replace(/‘’/g, "'").split(" ");
+			let args = bot.resolvers.getMatches(msg.content.substr(cfg.prefix.length), bot.paramRegex);
 			var cmd = args.shift();
+			let raw = msg.content.substr(cfg.prefix.length + cmd.length + 1);
 			if (bot.commands[cmd] && ((msg.author.id === bot.config.owner) || (bot.commands[cmd].permitted(msg, args)))) {
 				let content;
 				try {
-					content = await bot.commands[cmd].execute(msg, args, cfg, bot);
+					content = await bot.commands[cmd].execute(msg, args, cfg, raw);
 					if (content)
 						bot.messaging.send(msg.channel, content);
 				} catch (e) {

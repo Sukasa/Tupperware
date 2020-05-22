@@ -6,7 +6,7 @@ module.exports = function (bot) {
 		permitted: () => true,
 		execute: function (msg, args, cfg) {
 			let out = "";
-			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
+			
 			if (!args[0]) {
 
 				let tulps = bot.tulpae.listForMessage(msg);

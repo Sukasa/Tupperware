@@ -11,7 +11,7 @@ module.exports = function (bot) {
 		permitted: () => true,
 		desc: cfg => "Information and commands related to the European GDPR regulations",
 		execute: async (msg, args, cfg) => {
-			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
+			
 
 			if (!args[0])
 				return bot.commands.help.execute(msg, ["gdpr"], cfg);

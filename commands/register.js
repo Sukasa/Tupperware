@@ -6,7 +6,7 @@ module.exports = function (bot) {
 		permitted: () => true,
 		execute: function (msg, args, cfg) {
 			let proper = bot.language.proper;
-			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
+			
 			let out = "";
 
 			if (!args[0])

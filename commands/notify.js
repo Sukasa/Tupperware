@@ -4,12 +4,12 @@ module.exports = function (bot) {
 		usage: cfg => [`notify <message>`],
 		desc: cfg => `(OWNER ONLY): Add service notification`,
 		permitted: () => false,
-		execute: function (msg, args, cfg) {
+		execute: function (msg, args, cfg, raw) {
 			if (bot.config.notify.busy)
 				return "Unable - previous notification task still active";
 
 			bot.config.notify.currNotify = Date.now();
-			bot.config.notify.notifyMessage = args.join(" ");
+			bot.config.notify.notifyMessage = raw;
 			bot.config.notify.busy = true;
 			bot.configuration.markDirty("config");
 			bot.taskData.notifyResponseChannel = msg.channel;

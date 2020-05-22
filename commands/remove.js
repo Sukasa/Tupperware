@@ -7,7 +7,7 @@ module.exports = function (bot) {
 		execute: function (msg, args, cfg) {
 			let out = "";
 
-			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
+			
 			if (!args[0])
 				return bot.commands.help.execute(msg, ["remove"], cfg);
 

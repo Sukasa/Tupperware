@@ -4,8 +4,8 @@ module.exports = function (bot) {
 		usage: cfg => [`setstatus <message>`],
 		desc: cfg => `(OWNER ONLY): Update bot status`,
 		permitted: () => false,
-		execute: function (msg, args, cfg) {
-			bot.updateStatus(args.join(" "));
+		execute: function (msg, args, cfg, raw) {
+			bot.updateStatus(raw);
 			return "Status updated";
 		}
 	};

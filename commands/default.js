@@ -10,7 +10,7 @@ module.exports = function (bot) {
 			if (msg.channel instanceof Eris.PrivateChannel)
 				return bot.messaging.send(msg.channel, "This command cannot be used in private messages.");
 			let out = "";
-			args = bot.resolvers.getMatches(msg.content, bot.paramRegex).slice(1);
+			
 
 			if (!args[0]) 
 				return bot.commands.help.execute(msg, ["default"], cfg);
