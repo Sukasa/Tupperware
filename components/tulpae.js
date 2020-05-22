@@ -9,7 +9,7 @@ module.exports = function (bot) {
 		if (user) {
 			var matches = Object.values(user.tulpae).filter(t => t.name.toLowerCase().indexOf(name.toLowerCase()) > -1)
 
-			var matchDistance = 10000;
+			var matchDistance = 10000; // arbitrarily high number
 			var closestMatch = null;
 
 			for (var i = 0; i < matches.length; i++) {
