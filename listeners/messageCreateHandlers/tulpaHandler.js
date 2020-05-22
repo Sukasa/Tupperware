@@ -99,7 +99,11 @@ module.exports = function (bot) {
 
 		// If there's an attachment, handle that separately
 		if (msg.attachments[0]) {
-			return bot.webhooks.sendAttachment(msg, cfg, data, content, hook);
+
+			if (!msg.attachments.find(x => x.size >= 8000000))
+				return bot.webhooks.sendAttachment(msg, cfg, data, content, hook);
+
+			return;
 		}
 
 		// Otherwise post to the channel via webhook
