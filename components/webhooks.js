@@ -46,7 +46,7 @@ module.exports = function (bot) {
 						bot.messaging.send(msg.channel, "Warning: I do not have permission to delete messages. Both the original message and " + cfg.singular + " webhook message will show.");
 
 					bot.messaging.addRecent(msg, webmsg, data);
-					resolve();
+					resolve(true);
 				}).catch(reject);
 		});
 	};

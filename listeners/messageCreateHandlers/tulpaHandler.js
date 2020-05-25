@@ -94,44 +94,50 @@ module.exports = function (bot) {
 			data.username = data.username.substring(0, 1) + "\u200a" + data.username.substring(1);
 		}
 
-		// Add one post for that tulpa
-		tulpa.posts++;
-
 		// If there's an attachment, handle that separately
 		if (msg.attachments[0]) {
+			if (!msg.attachments.some(x => { bot.logger.debug(x.size); return x.size >= 8000000; })) {
+				// Add one post for that tulpa
+				tulpa.posts++;
 
-			if (!msg.attachments.find(x => x.size >= 8000000))
 				return bot.webhooks.sendAttachment(msg, cfg, data, content, hook);
-
-			return;
-		}
-
-		// Otherwise post to the channel via webhook
-		let webmsg;
-		try {
-			webmsg = await bot.executeWebhook(hook.id, hook.token, data);
-		} catch (e) {
-			bot.logger.error(e);
-			if (e.code === 10015) {
-				delete bot.serverWebhooks[msg.channel.id];
-				const hook = await bot.webhooks.fetchWebhook(msg.channel);
-				bot.executeWebhook(hook.id, hook.token, data);
 			}
+			return false;
 		}
 
-		// Then log the message
-		bot.logging.logMessage(msg, content, tulpa);
+			// Add one post for that tulpa
+			tulpa.posts++;
 
-		// Now handle recent updating
-		bot.messaging.addRecent(msg, webmsg, data);
+			// Otherwise post to the channel via webhook
+			let webmsg;
+			try {
+				webmsg = await bot.executeWebhook(hook.id, hook.token, data);
+			} catch (e) {
+				bot.logger.error(e);
+				if (e.code === 10015) {
+					delete bot.serverWebhooks[msg.channel.id];
+					const hook = await bot.webhooks.fetchWebhook(msg.channel);
+					bot.executeWebhook(hook.id, hook.token, data);
+				}
+			}
+
+			// Then log the message
+			bot.logging.logMessage(msg, content, tulpa);
+
+			// Now handle recent updating
+			bot.messaging.addRecent(msg, webmsg, data);
+
+			return true;
 	}
 
 	async function execute(msg, state) {
 		Promise.all(state.map(r => createTulpaMessage(...r)))
-			.then(() => {
-				if (msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
-					msg.delete().catch(e => { if (e.code == 50013) { throw "Warning: I'm missing permissions needed to properly replace messages."; } });
-				bot.configuration.markDirty("hosts");
+			.then((result) => {
+				if (result.every(x => x == true)) {
+					if (msg.channel.permissionsOf(bot.user.id).has("manageMessages"))
+						msg.delete().catch(e => { if (e.code == 50013) { throw "Warning: I'm missing permissions needed to properly replace messages."; } });
+					bot.configuration.markDirty("hosts");
+				}
 			}).catch(e => {
 				bot.logger.error(e);
 			});
