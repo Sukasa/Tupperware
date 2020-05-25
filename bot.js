@@ -36,7 +36,7 @@ bot.launch = function() {
     console.log("");
 
     bot.disconnects = 0;
-    bot.paramRegex = /["‘’`'](.*?)["‘’`']|(\S+)/gi;
+    bot.paramRegex = /["‘’“”`'](.*?)["“”‘’`']|(\S+)/gi;
 
     bot.commands = {};
     bot.data = {};
