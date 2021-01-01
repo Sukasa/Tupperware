@@ -1,4 +1,4 @@
-const reserved = ["add", "remove", "rename"];
+const reserved = ["add", "remove", "rename", "list", "listurls"];
 
 module.exports = function (bot) {
 	return {
@@ -93,6 +93,16 @@ module.exports = function (bot) {
 							out = "Renamed form '" + form1 + "' to '" + param2 + "'.";
 							bot.configuration.markDirty("hosts");
 
+
+							break;
+						case "listurls":
+
+							out = `${tulpa.name}'s current forms:`;
+							for (var form in tulpa.forms) {
+								out = out + `\n\`${form}\`: \`${tulpa.forms[form]}\``;
+								if (tulpa.forms[form] == tulpa.url)
+									out = out + " (current)";
+							}
 
 							break;
 						case "list":
