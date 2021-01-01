@@ -3,7 +3,7 @@ module.exports = function (bot) {
 		help: cfg => `View or change ${cfg.singularArticle} ${cfg.singular}'s description`,
 		usage: cfg => [`describe <name> [desc] - if desc is specified, change the ${cfg.singular}'s description, if not, simply echo the current one`],
 		desc: cfg => "Description must be limited to no more than 500 characters",
-		aliases: ["desc", "description"],
+		aliases: ["desc", "description", "ds"],
 		permitted: () => true,
 		execute: function (msg, args, cfg) {
 			let out = "";
@@ -24,7 +24,9 @@ module.exports = function (bot) {
 					out = `No description set for ${tulpa.name}`;
 				}
 			} else {
-				tulpa.desc = args.slice(1).join(" ").slice(0, 500);
+				if (args.slice(1).join(" ").length > bot.config.maxDescLength)
+					throw `Description cannot be more than ${bot.config.maxDescLength} characters`;
+				tulpa.desc = args.slice(1).join(" ");
 				bot.configuration.markDirty("hosts");
 				out = "Description updated successfully.";
 			}
