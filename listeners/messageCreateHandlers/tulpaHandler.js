@@ -67,7 +67,7 @@ module.exports = function (bot) {
 			// If we have multiple messages from the same tulpa in a row, merge them instead of submitting as separate messages
 			for (var i = replace.length - 1; i > 0; i--) {
 				if (replace[i - 1][2] == replace[i][2]) {
-					replace[i - 1][3] = replace[i - 1][3] + "\n" + replace[i][3];
+					replace[i - 1][3] = replace[i - 1][3].trim() + "\n" + replace[i][3].trim();
 					replace.splice(i, 1);
 				}
 			}
@@ -104,29 +104,29 @@ module.exports = function (bot) {
 			return false;
 		}
 
-			// Add one post for that tulpa
-			tulpa.posts++;
+		// Add one post for that tulpa
+		tulpa.posts++;
 
-			// Otherwise post to the channel via webhook
-			let webmsg;
-			try {
-				webmsg = await bot.executeWebhook(hook.id, hook.token, data);
-			} catch (e) {
-				bot.logger.error(e);
-				if (e.code === 10015) {
-					delete bot.serverWebhooks[msg.channel.id];
-					const hook = await bot.webhooks.fetchWebhook(msg.channel);
-					bot.executeWebhook(hook.id, hook.token, data);
-				}
+		// Otherwise post to the channel via webhook
+		let webmsg;
+		try {
+			webmsg = await bot.executeWebhook(hook.id, hook.token, data);
+		} catch (e) {
+			bot.logger.error(e);
+			if (e.code === 10015) {
+				delete bot.serverWebhooks[msg.channel.id];
+				const hook = await bot.webhooks.fetchWebhook(msg.channel);
+				bot.executeWebhook(hook.id, hook.token, data);
 			}
+		}
 
-			// Then log the message
-			bot.logging.logMessage(msg, content, tulpa);
+		// Then log the message
+		bot.logging.logMessage(msg, content, tulpa);
 
-			// Now handle recent updating
-			bot.messaging.addRecent(msg, webmsg, data);
+		// Now handle recent updating
+		bot.messaging.addRecent(msg, webmsg, data);
 
-			return true;
+		return true;
 	}
 
 	async function execute(msg, state) {
