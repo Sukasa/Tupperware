@@ -16,7 +16,7 @@ module.exports = function (bot) {
 				throw `You don't have ${cfg.singularArticle} ${cfg.singular} matching that name registered.`;
 
 			if (!args[1] && !msg.attachments[0])
-				return `${tulpa.name}'s avatar is : \`${tulpa.url}\``;
+				return `${tulpa.name}'s avatar is : ${tulpa.url}`;
 
 			tulpa.url = await bot.resolvers.resolveImage(msg);
 			bot.configuration.markDirty("hosts");

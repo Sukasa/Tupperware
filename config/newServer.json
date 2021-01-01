@@ -1,5 +1,5 @@
 {
-  "prefix": "t!",
+  "prefix": "tp!",
   "singular": "tulpa",
   "plural": "tulpae",
   "singularArticle": "a",
@@ -11,5 +11,6 @@
   "coexistenceMode": true,
   "cmdblacklist": [],
   "diceblacklist": [],
-  "blacklist": []
+  "blacklist": [],
+  "userBans": []
 }
