@@ -96,8 +96,7 @@ module.exports = function (bot) {
 
 		// If there's an attachment, handle that separately
 		if (msg.attachments[0]) {
-			if (!msg.attachments.some(x => { bot.logger.debug(x.size); return x.size >= 8000000; })) {
-				// Add one post for that tulpa
+			if (msg.attachments.reduce((sum, cur) => sum + cur.size) < 8000000) {
 				tulpa.posts++;
 
 				return bot.webhooks.sendAttachment(msg, cfg, data, content, hook);
