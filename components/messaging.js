@@ -28,8 +28,9 @@ module.exports = function (bot) {
 		return recent && recent[msg.channel.id] && recent[msg.channel.id].find(r => r.userID == userID && msg.id == r.id);
 	}
 
-	function isUsernameCollision(msg, username) {
-		return recent && recent[msg.channel.id] && recent[msg.channel.id][0].userID != msg.author.id && recent[msg.channel.id][0].data && recent[msg.channel.id][0].data.username == username;
+	// Checks if two dissimilar users might get merged by accident.  Also checks in case the avatar URL has changed (Form, etc)
+	function isUsernameCollision(msg, username, url) {
+		return recent && recent[msg.channel.id] && recent[msg.channel.id][0].userID != msg.author.id && recent[msg.channel.id][0].data && recent[msg.channel.id][0].data.username == username && recent[msg.channel.id][0].data.avatarURL != url;
 	}
 
 	function getRecent(channel) {

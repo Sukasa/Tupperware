@@ -63,7 +63,7 @@ module.exports = function (bot) {
 
 		// If we found match(es), return the array as a signal we can handle the message here (this will be passed to exec() as the state, so it's useful)
 		if (replace[0]) {
-			
+
 			// If we have multiple messages from the same tulpa in a row, merge them instead of submitting as separate messages
 			for (var i = replace.length - 1; i > 0; i--) {
 				if (replace[i - 1][2] == replace[i][2]) {
@@ -90,7 +90,7 @@ module.exports = function (bot) {
 		};
 
 		// If two tulpae with the same name but different hosts talk, then make sure the messages can't merge
-		if (bot.messaging.isUsernameCollision(msg, data.username)) {
+		if (bot.messaging.isUsernameCollision(msg, data.username, data.avatarURL)) {
 			data.username = data.username.substring(0, 1) + "\u200a" + data.username.substring(1);
 		}
 
@@ -98,9 +98,9 @@ module.exports = function (bot) {
 		if (msg.attachments[0]) {
 			if (msg.attachments.reduce((sum, cur) => sum + cur.size) < 8000000) {
 				tulpa.posts++;
-
 				return bot.webhooks.sendAttachment(msg, cfg, data, content, hook);
 			}
+
 			return false;
 		}
 
