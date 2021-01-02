@@ -92,10 +92,8 @@ module.exports = function (bot) {
 			throw "Unable to validate null brackets";
 
 		let other;
-		if (other = Object.values(user.tulpae).find(x => x != exempt && x.brackets.find(y => (y[0].toLowerCase().endsWith(brackets[0].toLowerCase()) ||
-			brackets[0].toLowerCase().endsWith(y[0].toLowerCase())) &&
-			(y[1].toLowerCase().startsWith(brackets[1].toLowerCase()) ||
-				brackets[1].toLowerCase().startsWith(y[1].toLowerCase())))))
+		if (other = Object.values(user.tulpae).find(x => x != exempt && x.brackets.find(y => (y[0].toLowerCase() == brackets[0].toLowerCase()) &&
+			(brackets[1].toLowerCase() == y[1].toLowerCase()))))
 			throw `Those brackets are ambiguous with ${other.name}'s, please choose a different set`;
 
 		return brackets;
