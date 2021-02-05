@@ -37,7 +37,8 @@ module.exports = function (bot) {
 			if (cfg.lastNotify) {
 				bot.messaging.send(channel, "**Service Notification:**\n" + bot.config.notify.notifyMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
 			} else {
-				bot.messaging.send(channel, bot.config.introMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
+				if (bot.config.introMessage && bot.config.name)
+					bot.messaging.send(channel, bot.config.introMessage.replace(/\%NAME\%/g, bot.config.name).replace(/\%PREFIX\%/g, cfg.prefix));
 			}
 			cfg.lastNotify = Date.now();
 
