@@ -86,6 +86,7 @@ module.exports = function (bot) {
 			content: content,
 			username: `${tulpa.name.replace(/(c)(lyde)/gi, "$1\u200a$2")} ${tulpa.tag ? tulpa.tag.replace(/(c)(lyde)/gi, "$1\u200a$2") : ""} ${bot.tulpae.checkBirthday(tulpa) ? "\uD83C\uDF70" : ""}`,
 			avatarURL: tulpa.url,
+			messageReference: msg.referencedMessage,
 			tulpa: tulpa
 		};
 

@@ -11,7 +11,7 @@
   "dependencies": {
     "bufferutil": "^3.0.3",
     "death": "^1.1.0",
-    "eris": "^0.8.7",
+    "eris": "^0.14.0",
     "erlpack": "github:abalabahaha/erlpack",
     "eventemitter3": "^3.0.1",
     "got": "^10.7.0",
