@@ -96,6 +96,8 @@ bot.launch = function() {
 
 process.on("unhandledRejection", console.log);
 
+bot.servers = bot.servers || {};
+
 bot.launch();
 
 process.on('SIGINT', function() {

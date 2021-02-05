@@ -59,6 +59,14 @@ module.exports = function (bot) {
         bot.configuration.markDirty("config");
     };
 
+    if (!bot.config.notify) {
+        bot.config.notify = {
+            busy: false,
+            currNotify: 0,
+            notifyMessage: ""
+        };
+    }
+
     if (bot.config.notify.busy) {
         bot.logger.info("- Queueing incomplete notification task on 10 second delay");
         setTimeout(execute, 10000);
