@@ -12,6 +12,7 @@ module.exports = function (bot) {
 	};
 
 	function addRecent(userMsg, botMsg, data) {
+		
 		recent[userMsg.channel.id] = recent[userMsg.channel.id] || [];
 		recent[userMsg.channel.id].unshift({
 			userID: userMsg.author.id,
@@ -25,6 +26,8 @@ module.exports = function (bot) {
 	};
 
 	function isRecent(msg, userID) {
+		
+		
 		return recent && recent[msg.channel.id] && recent[msg.channel.id].find(r => r.userID == userID && msg.id == r.id);
 	}
 

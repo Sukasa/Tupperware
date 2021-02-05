@@ -13,7 +13,7 @@ module.exports = function (bot) {
 		help: cfg => "Configure server-specific settings",
 		usage: cfg => Object.values(handlers).map(handler => handler.usage(cfg)).reduce((s,r) => s.concat(r), []),
 
-		permitted: (msg) => (msg.member && msg.member.permission.has("administrator")),
+		permitted: (msg) => (msg.member && msg.member.permission.has("manageGuild")),
 		execute: function (msg, args, cfg) {
 			let out = "";
 			if (msg.channel instanceof Eris.PrivateChannel)
