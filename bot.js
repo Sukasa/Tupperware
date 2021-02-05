@@ -98,6 +98,7 @@ process.on("unhandledRejection", console.log);
 
 bot.servers = bot.servers || {};
 bot.hosts = bot.hosts || {};
+bot.serverWebhooks = bot.serverWebhooks || {};
 
 bot.launch();
 
