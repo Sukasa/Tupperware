@@ -4,6 +4,7 @@
   "description": "tupperware bot for discord tulpa hooks",
   "main": "bot.js",
   "scripts": {
+    "start": "node bot",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Keter",
