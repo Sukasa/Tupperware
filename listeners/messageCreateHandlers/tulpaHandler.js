@@ -1,5 +1,3 @@
-const { Channel, TextChannel } = require("eris");
-
 module.exports = function (bot) {
 	const aniRegex = /^<a:[^\s:]+:\d+>$/mi;
 	const priorities = bot.priorities;
