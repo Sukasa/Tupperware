@@ -1,3 +1,5 @@
+const { Channel, TextChannel } = require("eris");
+
 module.exports = function (bot) {
 	const aniRegex = /^<a:[^\s:]+:\d+>$/mi;
 	const priorities = bot.priorities;
@@ -79,15 +81,58 @@ module.exports = function (bot) {
 		return false;
 	}
 
+	function truncateMessage (originalMsg, length) {
+		const messageParts = [originalMsg.substring(0, length).trim()];
+		const spoilerMdRegex = /\|\|/g;
+
+		// Check for spoiler tags that might have gotten truncated and add ones to the end if needed
+		if ((messageParts[0].match(spoilerMdRegex) || []).length % 2 !== 0 &&
+				(originalMsg.match(spoilerMdRegex) || []).length % 2 === 0) {
+			messageParts.push('||');
+		}
+		messageParts.push('…')
+	
+		return messageParts.join('');
+	}
+
+	function formatReplyEmbed (reply, maxLen = 75) {
+		const message = reply.content.length <= maxLen ? reply.content.trim() : truncateMessage(reply.content, maxLen)
+		const description = [
+			'[Reply to:',
+			reply.attachments.length > 0 && ' :paperclip:',
+			!message && ' (Click to View Content)',
+			`](${reply.jumpLink}) ${message}`,
+		].filter(Boolean).join('');
+		
+		return {
+			type: "rich",
+			author: {
+				name: reply.member && reply.member.nick ? reply.member.nick : reply.author.username,
+				icon_url: reply.author.avatarURL,
+			},
+			description: description,
+		};
+	}
+
 	async function createTulpaMessage(msg, cfg, tulpa, content) {
 		const hook = await bot.webhooks.fetchWebhook(msg.channel);
+
+		const embeds = [
+			// messageReference, if it exists, points to a reply
+			msg.messageReference && formatReplyEmbed(
+				await msg.channel.getMessage(msg.messageReference.messageID), 
+				bot.config.maxReplyLength
+			)
+		].filter(Boolean);
+
 		const data = {
 			wait: true,
 			content: content,
 			username: `${tulpa.name.replace(/(c)(lyde)/gi, "$1\u200a$2")} ${tulpa.tag ? tulpa.tag.replace(/(c)(lyde)/gi, "$1\u200a$2") : ""} ${bot.tulpae.checkBirthday(tulpa) ? "\uD83C\uDF70" : ""}`,
 			avatarURL: tulpa.url,
 			messageReference: msg.referencedMessage,
-			tulpa: tulpa
+			embeds: embeds,
+			tulpa: tulpa,
 		};
 
 		// If two tulpae with the same name but different hosts talk, then make sure the messages can't merge
