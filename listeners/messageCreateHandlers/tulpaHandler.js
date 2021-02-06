@@ -83,7 +83,8 @@ module.exports = function (bot) {
 		const messageParts = [originalMsg.substring(0, length).trim()];
 		const spoilerMdRegex = /\|\|/g;
 
-		// Check for spoiler tags that might have gotten truncated and add ones to the end if needed
+		// Check for spoiler tags that might have gotten truncated 
+		// and add extra ones to the end if needed
 		if ((messageParts[0].match(spoilerMdRegex) || []).length % 2 !== 0 &&
 				(originalMsg.match(spoilerMdRegex) || []).length % 2 === 0) {
 			messageParts.push('||');
@@ -94,7 +95,9 @@ module.exports = function (bot) {
 	}
 
 	function formatReplyEmbed (reply, maxLen = 75) {
-		const message = reply.content.length <= maxLen ? reply.content.trim() : truncateMessage(reply.content, maxLen)
+		const message = reply.content.length <= maxLen ? 
+			reply.content.trim() : 
+			truncateMessage(reply.content, maxLen)
 		const description = [
 			'[Reply to:',
 			reply.attachments.length > 0 && ' :paperclip:',
@@ -105,7 +108,9 @@ module.exports = function (bot) {
 		return {
 			type: "rich",
 			author: {
-				name: reply.member && reply.member.nick ? reply.member.nick : reply.author.username,
+				name: (reply.member && reply.member.nick) ? 
+					reply.member.nick : 
+					reply.author.username,
 				icon_url: reply.author.avatarURL,
 			},
 			description: description,
