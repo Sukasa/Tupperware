@@ -111,7 +111,7 @@ module.exports = function (bot) {
 				name: (reply.member && reply.member.nick) ? 
 					reply.member.nick : 
 					reply.author.username,
-				icon_url: reply.author.avatarURL,
+				icon_url: reply.author.staticAvatarURL,
 			},
 			description: description,
 		};
