@@ -43,6 +43,7 @@ bot.launch = function() {
     bot.diceEngines = {};
     bot.tasks = {};
     bot.taskData = {};
+    bot.listeners = {};
 
     bot.servers = {};
     bot.hosts = {};
@@ -65,7 +66,8 @@ bot.launch = function() {
     // Load Eris event listeners
     fs.readdirSync("./listeners").filter(x => x.endsWith(".js")).forEach(file => {
         logger.info(`Loading listener ${file}`);
-        bot.on(file.slice(0, -3), require("./listeners/" + file)(bot).exec)
+        bot.listeners[file] = require("./listeners/" + file)(bot);
+        bot.on(file.slice(0, -3), bot.listeners[file].exec)
     });
 
     // Load commands (w/ aliases)
