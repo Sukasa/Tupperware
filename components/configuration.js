@@ -46,7 +46,7 @@ module.exports = function (bot) {
         bot.logger.debug(`Saving ${filename} to ${path}/config/${filename}`);
         dirty[filename] = false;
         if (synchronous) {
-            return fs.writeFileSync(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { bot.logger.debug(`Saved ${filename}`); });
+            return fs.writeFileSync(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2));
         } else {
             return fs.writeFile(`${path}/config/${filename}.json`, JSON.stringify(configFile, null, 2), () => { bot.logger.debug(`Saved ${filename}`); });
         }
