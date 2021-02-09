@@ -16,7 +16,7 @@ module.exports = function (bot) {
             fs.mkdirSync(`${path}/autobackup`);
 
         for (let i = maxBackups; i >= 2; i--) {
-            for (var file in configsToSave) {
+            for (let file of configsToSave) {
                 if (fs.existsSync(`${path}/autobackup/${file}-${i - 1}.json`))
                     fs.renameSync(`${path}/autobackup/${file}-${i - 1}.json`, `${path}/autobackup/${file}-${i}.json`);
             }
