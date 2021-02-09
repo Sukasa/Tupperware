@@ -44,6 +44,10 @@ bot.launch = function() {
     bot.tasks = {};
     bot.taskData = {};
 
+    bot.servers = {};
+    bot.hosts = {};
+    bot.serverWebhooks = {};
+
     // Load configuration
     fs.readdirSync("./config").forEach(file => {
         logger.info(`Loading config ${file}`);
@@ -95,10 +99,6 @@ bot.launch = function() {
 }
 
 process.on("unhandledRejection", console.log);
-
-bot.servers = bot.servers || {};
-bot.hosts = bot.hosts || {};
-bot.serverWebhooks = bot.serverWebhooks || {};
 
 bot.launch();
 
